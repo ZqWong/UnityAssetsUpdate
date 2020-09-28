@@ -13,7 +13,7 @@ public class PlatformInfoManager : MonoBehaviour
     /// <returns>a path string</returns>
     public static string GetCurrentPlatformPath()
     {
-        TargetPlatform targetPlatformConfig = AssetDataBase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
+        TargetPlatform targetPlatformConfig = AssetDatabase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
         return targetPlatformConfig.GetCurrentPlatformPath();
     }
 
@@ -23,7 +23,7 @@ public class PlatformInfoManager : MonoBehaviour
     /// <returns>a url string</returns>
     public static string GetServerUrl()
     {
-        TargetPlatform targetPlatformConfig = AssetDataBase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
+        TargetPlatform targetPlatformConfig = AssetDatabase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
         return targetPlatformConfig.ServerUrl;
     }
 
@@ -33,7 +33,7 @@ public class PlatformInfoManager : MonoBehaviour
     /// <returns>BuildTarget enum</returns>
     public static BuildTarget GetCurrentPlatformBuildTarget()
     {
-         TargetPlatform targetPlatformConfig = AssetDataBase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
+         TargetPlatform targetPlatformConfig = AssetDatabase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
          return targetPlatformConfig.GetCurrentPlatformBuildTarget();
     }
 }

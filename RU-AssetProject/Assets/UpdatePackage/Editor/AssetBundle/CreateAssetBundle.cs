@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
 public class CreateAssetBundle : MonoBehaviour
@@ -254,6 +255,7 @@ public class CreateAssetBundle : MonoBehaviour
         CopyABAndGeneratXml(bundleUnPackMd5Path, changeList, hotCount , des);        
     }
     
+    private static string bundleUnPackMd5Path = "";
     public static void WriteUnpackFileMD5(string hotCount)
     {
         Debug.Log("检查内部文件MD5");
@@ -387,7 +389,7 @@ public class CreateAssetBundle : MonoBehaviour
         unpackPatch.Name = unpackFileInfoExtend.FileInfo.Name;
         unpackPatch.Size = unpackFileInfoExtend.FileInfo.Length / 1024.0f;
         unpackPatch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
-        unpackPatch.Url = GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
+        unpackPatch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
         pathces.Files.Add(unpackPatch);
         File.Delete(unpackFileInfoExtend.FileInfo.FullName);
         ///////////////////
@@ -424,7 +426,7 @@ public class CreateAssetBundle : MonoBehaviour
                 patch.Name = changeList[i].FileInfo.Name;
                 patch.Size = changeList[i].FileInfo.Length / 1024.0f;
                 patch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
-                patch.Url = GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
+                patch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
                 patch.RelativePath = changeList[i].RelativePath;
                 pathces.Files.Add(patch);
             }
