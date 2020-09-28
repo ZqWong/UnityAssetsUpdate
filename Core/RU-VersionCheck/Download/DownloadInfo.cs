@@ -19,73 +19,73 @@ namespace RU.Core.Download
           Action<string, float> updateProgress,
           bool zipFileCreateEnable)
         {
-            this.Name = name;
-            this.NeedUnpackZip = needUnpackZip;
-            this.UpdateProgress = updateProgress;
-            this.m_ZipFileCreateEnable = zipFileCreateEnable;
+            Name = name;
+            NeedUnpackZip = needUnpackZip;
+            UpdateProgress = updateProgress;
+            m_ZipFileCreateEnable = zipFileCreateEnable;
         }
 
         public float DownloadProgress
         {
-            get => this.downloadProgress;
+            get => downloadProgress;
             set
             {
-                this.downloadProgress = value;
-                this.Update();
+                downloadProgress = value;
+                Update();
             }
         }
 
         public float UnpackZipProgress
         {
-            get => this.unpackZipProgress;
+            get => unpackZipProgress;
             set
             {
-                this.unpackZipProgress = value;
-                this.Update();
+                unpackZipProgress = value;
+                Update();
             }
         }
 
         public float CreateFileProgress
         {
-            get => this.createFileProgress;
+            get => createFileProgress;
             set
             {
-                this.createFileProgress = value;
-                this.Update();
+                createFileProgress = value;
+                Update();
             }
         }
 
         public DownloadInfo.State CurrentState
         {
-            get => this.currentState;
+            get => currentState;
             set
             {
-                this.currentState = value;
-                this.Update();
+                currentState = value;
+                Update();
             }
         }
 
         public float GetProgress()
         {
-            if (!this.NeedUnpackZip)
-                return (float)((double)this.DownloadProgress * 0.699999988079071 + (double)this.CreateFileProgress * 0.300000011920929);
-            return this.m_ZipFileCreateEnable ? (float)((double)this.DownloadProgress * 0.400000005960464 + (double)this.CreateFileProgress * 0.300000011920929 + (double)this.UnpackZipProgress * 0.300000011920929) : (float)((double)this.DownloadProgress * 0.699999988079071 + (double)this.UnpackZipProgress * 0.300000011920929);
+            if (!NeedUnpackZip)
+                return (DownloadProgress * 0.699999988079071 + CreateFileProgress * 0.300000011920929);
+            return m_ZipFileCreateEnable ? (DownloadProgress * 0.400000005960464 + CreateFileProgress * 0.300000011920929 + UnpackZipProgress * 0.300000011920929) : (DownloadProgress * 0.699999988079071 + UnpackZipProgress * 0.300000011920929);
         }
 
         public string GetStateInfo()
         {
-            switch (this.CurrentState)
+            switch (CurrentState)
             {
                 case DownloadInfo.State.None:
-                    return "正在准备开始  " + this.Name;
+                    return "正在准备开始  " + Name;
                 case DownloadInfo.State.Download:
-                    return "正在下载  " + this.Name;
+                    return "正在下载  " + Name;
                 case DownloadInfo.State.UnpackZip:
-                    return "正在解压  " + this.Name;
+                    return "正在解压  " + Name;
                 case DownloadInfo.State.CreateFile:
-                    return "正在创建  " + this.Name;
+                    return "正在创建  " + Name;
                 case DownloadInfo.State.Completed:
-                    return "已完成  " + this.Name;
+                    return "已完成  " + Name;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -93,9 +93,9 @@ namespace RU.Core.Download
 
         private void Update()
         {
-            if (this.UpdateProgress == null)
+            if (UpdateProgress == null)
                 return;
-            this.UpdateProgress(this.GetStateInfo(), this.GetProgress());
+            UpdateProgress(GetStateInfo(), GetProgress());
         }
 
         public enum State
