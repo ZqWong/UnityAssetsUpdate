@@ -5,10 +5,10 @@ using UnityEngine;
 
 public class CreateAssetBundle : MonoBehaviour
 {
-    private const string ASSET_BUNDLE_FILE_SAVE_LOCATION = Application.dataPath + "/../out/AssetBundle/" + PlatformInfoManager.GetCurrentPlatformPath();
-    private const string EXTRACT_ZIP_CACHE_PATH = Application.dataPath + "/../out/ZipCache";
-    private const string VERSION_MD5_PATH = Application.dataPath + "/../out/Version/" + GetTargetPlatformPath();
-    private const string HOT_OUT_PATH = Application.dataPath + "/../out/Hot/" + GetTargetPlatformPath();
+    private static string ASSET_BUNDLE_FILE_SAVE_LOCATION = Application.dataPath + "/../out/AssetBundle/" + PlatformInfoManager.GetCurrentPlatformPath();
+    private static string EXTRACT_ZIP_CACHE_PATH = Application.dataPath + "/../out/ZipCache";
+    private static string VERSION_MD5_PATH = Application.dataPath + "/../out/Version/" + GetTargetPlatformPath();
+    private static string HOT_OUT_PATH = Application.dataPath + "/../out/Hot/" + GetTargetPlatformPath();
 
     //储存读出来MD5信息
     private static Dictionary<string, AssetBase> m_PackedMd5 = new Dictionary<string, AssetBase>();
