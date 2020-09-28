@@ -109,7 +109,7 @@ namespace RU.Core.Download
 
         public void OnCreateFileProgressUpdate(float progress) => m_Info.CreateFileProgress = progress;
 
-        public override long GetCurLength() => m_WebRequest != null ? m_WebRequest.downloadedBytes : 0L;
+        public override long GetCurLength() => (long)(m_WebRequest != null ? m_WebRequest.downloadedBytes : 0L);
 
         public override long GetLength() => 0;
 

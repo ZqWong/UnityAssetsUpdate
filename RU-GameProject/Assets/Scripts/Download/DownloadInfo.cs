@@ -68,8 +68,8 @@ namespace RU.Core.Download
         public float GetProgress()
         {
             if (!NeedUnpackZip)
-                return (DownloadProgress * 0.699999988079071 + CreateFileProgress * 0.300000011920929);
-            return m_ZipFileCreateEnable ? (DownloadProgress * 0.400000005960464 + CreateFileProgress * 0.300000011920929 + UnpackZipProgress * 0.300000011920929) : (DownloadProgress * 0.699999988079071 + UnpackZipProgress * 0.300000011920929);
+                return (float)((double)DownloadProgress * 0.699999988079071 + (double)CreateFileProgress * 0.300000011920929);
+            return m_ZipFileCreateEnable ? (float)((double)DownloadProgress * 0.400000005960464 + (double)CreateFileProgress * 0.300000011920929 + (double)UnpackZipProgress * 0.300000011920929) : (float)((double)DownloadProgress * 0.699999988079071 + (double)UnpackZipProgress * 0.300000011920929);
         }
 
         public string GetStateInfo()

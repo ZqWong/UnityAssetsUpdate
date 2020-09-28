@@ -4,11 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using RU.Core.Download;
-using RU.Core.Utils.Scripts;
-using RU.Core.Utils.Scripts.BaseFrame;
+using RU.Core.Utils.Core;
 using UnityEngine;
 using UnityEngine.Networking;
-using VersionUpdate.Utils.Core;
 
 namespace RU.Core.VersionCheck
 {
