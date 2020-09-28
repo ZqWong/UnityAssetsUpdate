@@ -7,8 +7,8 @@ public class CreateAssetBundle : MonoBehaviour
 {
     private static string ASSET_BUNDLE_FILE_SAVE_LOCATION = Application.dataPath + "/../out/AssetBundle/" + PlatformInfoManager.GetCurrentPlatformPath();
     private static string EXTRACT_ZIP_CACHE_PATH = Application.dataPath + "/../out/ZipCache";
-    private static string VERSION_MD5_PATH = Application.dataPath + "/../out/Version/" + GetTargetPlatformPath();
-    private static string HOT_OUT_PATH = Application.dataPath + "/../out/Hot/" + GetTargetPlatformPath();
+    private static string VERSION_MD5_PATH = Application.dataPath + "/../out/Version/" + PlatformInfoManager.GetCurrentPlatformPath();
+    private static string HOT_OUT_PATH = Application.dataPath + "/../out/Hot/" + PlatformInfoManager.GetCurrentPlatformPath();
 
     //储存读出来MD5信息
     private static Dictionary<string, AssetBase> m_PackedMd5 = new Dictionary<string, AssetBase>();
@@ -181,7 +181,7 @@ public class CreateAssetBundle : MonoBehaviour
                 assetBase.Name = files[i].Name;
                 assetBase.Md5 = MD5Manager.Instance.BuildFileMd5(files[i].FullName);
                 assetBase.Size = files[i].Length / 1024.0f;
-                //assetBase.UnpackPath = GetFileRelativePath(files[i].FullName, GetTargetPlatformPath());
+                //assetBase.UnpackPath = GetFileRelativePath(files[i].FullName, PlatformInfoManager.GetCurrentPlatformPath());
                 assetsMD5.ABMD5List.Add(assetBase);
             }
         }
@@ -230,7 +230,7 @@ public class CreateAssetBundle : MonoBehaviour
 
                 if (!m_PackedMd5.ContainsKey(name))
                 {
-                    string RelativePath = GetDirRelativePath(files[i].DirectoryName, GetTargetPlatformPath());
+                    string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
                     changeList.Add(new FileInfoExtend(files[i], RelativePath));
                     Debug.Log("<color=yellow>" + "发现新增热更文件 ： " + name + "</color>");
                 }
@@ -241,7 +241,7 @@ public class CreateAssetBundle : MonoBehaviour
                     {
                         if (md5 != assetBase.Md5)
                         {
-                            string RelativePath = GetDirRelativePath(files[i].DirectoryName, GetTargetPlatformPath());
+                            string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
 
                             changeList.Add(new FileInfoExtend(files[i], RelativePath));
                             Debug.Log("<color=yellow>" + "发现修改热更文件 ： " + name + "</color>");
@@ -361,7 +361,7 @@ public class CreateAssetBundle : MonoBehaviour
 
         ////unpack.bytes////
         FileInfo unpackFileInfo = new FileInfo(bundleUnPackMd5Path);
-        string RelativePath = GetDirRelativePath(unpackFileInfo.DirectoryName, GetTargetPlatformPath());
+        string RelativePath = GetDirRelativePath(unpackFileInfo.DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
         FileInfoExtend unpackFileInfoExtend = new FileInfoExtend(unpackFileInfo, RelativePath);
         string unpackHotDic = "";
 
@@ -386,8 +386,8 @@ public class CreateAssetBundle : MonoBehaviour
         unpackPatch.Md5 = MD5Manager.Instance.BuildFileMd5(dest);
         unpackPatch.Name = unpackFileInfoExtend.FileInfo.Name;
         unpackPatch.Size = unpackFileInfoExtend.FileInfo.Length / 1024.0f;
-        unpackPatch.Platform = GetTargetPlatformPath();
-        unpackPatch.Url = GetServerUrl() + GetTargetPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
+        unpackPatch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
+        unpackPatch.Url = GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
         pathces.Files.Add(unpackPatch);
         File.Delete(unpackFileInfoExtend.FileInfo.FullName);
         ///////////////////
@@ -423,8 +423,8 @@ public class CreateAssetBundle : MonoBehaviour
                 patch.Md5 = MD5Manager.Instance.BuildFileMd5(changeList[i].FileInfo.FullName);
                 patch.Name = changeList[i].FileInfo.Name;
                 patch.Size = changeList[i].FileInfo.Length / 1024.0f;
-                patch.Platform = GetTargetPlatformPath();
-                patch.Url = GetServerUrl() + GetTargetPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
+                patch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
+                patch.Url = GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
                 patch.RelativePath = changeList[i].RelativePath;
                 pathces.Files.Add(patch);
             }
