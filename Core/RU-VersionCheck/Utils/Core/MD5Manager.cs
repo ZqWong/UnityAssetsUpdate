@@ -5,7 +5,6 @@ using System;
 using System.Security.Cryptography;
 using System.IO;
 using System.Text;
-using RU.Core.Utils.Scripts.BaseFrame;
 
 namespace RU.Core.Utils.Core
 {

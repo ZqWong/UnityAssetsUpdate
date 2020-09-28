@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
-using RU.Core.Utils.Scripts;
+using RU.Core.Utils.Core;
 
 namespace RU.Core.Download
 {

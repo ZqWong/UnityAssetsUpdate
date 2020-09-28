@@ -1,8 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
-using RU.Core.Utils.Scripts;
-using RU.Core.Utils.Scripts.BaseFrame;
+using RU.Core.Utils.Core;
 using UnityEngine;
 using UnityEngine.Networking;
 

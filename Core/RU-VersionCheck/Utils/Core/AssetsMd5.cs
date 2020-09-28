@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Xml.Serialization;
-using VersionUpdate.Utils.Core;
 
 namespace RU.Core.Utils.Core
 {
