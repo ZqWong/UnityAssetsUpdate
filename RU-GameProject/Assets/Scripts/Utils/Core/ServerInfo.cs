@@ -12,7 +12,7 @@ namespace RU.Core.Utils.Core
         [XmlElement("GameVersion")] public VersionInfo[] GameVersion;
     }
 
-//当前游戏版本对应的所有补丁
+    //当前游戏版本对应的所有补丁
     [System.Serializable]
     public class VersionInfo
     {
@@ -20,7 +20,7 @@ namespace RU.Core.Utils.Core
         [XmlElement] public Pathces[] Pathces;
     }
 
-//一个总补丁包
+    //一个总补丁包
     [System.Serializable]
     public class Pathces
     {

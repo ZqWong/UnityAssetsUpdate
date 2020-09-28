@@ -7,118 +7,193 @@ using UnityEngine.Networking;
 
 namespace RU.Core.Download
 {
-    public class DownLoadFileItem : BaseDownLoadItem
+    public class DownLoadFileItem : DownLoadItemBase
     {
-        private Action<string> OnError;
-        private DownloadInfo m_Info;
-        private UnityWebRequest m_WebRequest;
-        private float m_Progress = 0.0f;
-        private string m_UnpackPath;
-        private bool m_ZipFileCreateEnable;
+        /// <summary>
+        /// Action on download error throw.
+        /// </summary>
+        private Action<string> OnErrorThrown;
 
-        public DownloadInfo Info => m_Info;
 
-        public override float GetProcess() => m_Progress;
+        /// <summary>
+        /// Current download file info
+        /// </summary>
+        private DownloadInfo m_info;
 
-        public string GetProcessText() => ((m_Progress * 100.0) % 100).ToString() + "%";
+        /// <summary>
+        /// Unity web request handler
+        /// </summary>
+        private UnityWebRequest m_webRequest;
 
-        public bool NeedUncompress() => m_Url.EndsWith(".zip");
+        /// <summary>
+        /// File download progress value
+        /// </summary>
+        private float m_progress = 0.0f;
 
-        public float Size() => m_Patch.Size / 1024f;
+        /// <summary>
+        /// The path to unpack the zip
+        /// </summary>
+        private string m_unpackPath;
 
-        public DownLoadFileItem(
-          Patch patch,
-          string path,
-          string unpackPath,
-          Action<string, float> onUpdateProgress,
-          bool zipFileCreateEnable,
-          Action<string> onError)
-          : base(patch, path)
+        /// <summary>
+        /// 
+        /// </summary>
+        private bool m_zipFileCreateEnable;
+
+        /// <summary>
+        /// Get current download file info
+        /// </summary>
+        public DownloadInfo Info { get { return m_info; } }
+
+        /// <summary>
+        /// Get current download progress value
+        /// </summary>
+        /// <returns></returns>
+        public override float GetProcess() => m_progress;
+
+        /// <summary>
+        /// Get current download progress value with percent formmat
+        /// </summary>
+        /// <returns></returns>
+        public string GetProcessText() => ((m_progress * 100.0) % 100).ToString() + "%";
+
+        /// <summary>
+        /// Get need unpack
+        /// </summary>
+        /// <returns></returns>
+        public bool NeedUncompress() => m_url.EndsWith(".zip");
+
+        /// <summary>
+        /// Get file size (M) useless!
+        /// </summary>
+        /// <returns></returns>
+        public float Size() => m_patch.Size / 1024f;
+
+        /// <summary>
+        /// Initialize download task
+        /// </summary>
+        /// <param name="patch">Patch info</param>
+        /// <param name="path">Save path</param>
+        /// <param name="unpackPath">unpack path</param>
+        /// <param name="onUpdateProgress">progress update event</param>
+        /// <param name="zipFileCreateEnable"></param>
+        /// <param name="onErrorThrown">Error event</param>
+        public DownLoadFileItem(Patch patch, string path, string unpackPath, Action<string, float> onUpdateProgress, bool zipFileCreateEnable, Action<string> onErrorThrown) : base(patch, path)
         {
-            m_UnpackPath = unpackPath;
-            m_ZipFileCreateEnable = zipFileCreateEnable;
-            OnError = onError;
-            m_Info = new DownloadInfo(m_FileName, NeedUncompress(), onUpdateProgress, zipFileCreateEnable);
+            m_unpackPath = unpackPath;
+            m_zipFileCreateEnable = zipFileCreateEnable;
+            OnErrorThrown = onErrorThrown;
+            m_info = new DownloadInfo(m_fileName, NeedUncompress(), onUpdateProgress, zipFileCreateEnable);
         }
 
+        /// <summary>
+        /// Download enumerator
+        /// </summary>
+        /// <param name="completeCallback"></param>
+        /// <returns></returns>
         public new IEnumerator Download(Action completeCallback = null)
         {
-            m_StartDownLoad = true;
-            m_Progress = 0.0f;
-            m_Info.CurrentState = DownloadInfo.State.Download;
-            m_WebRequest = UnityWebRequest.Get(m_Url);
-            m_WebRequest.SendWebRequest();
-            while (m_WebRequest.downloadProgress < 1.0)
+            m_startDownLoad = true;
+            m_progress = 0.0f;
+            m_info.CurrentState = DownloadInfo.State.DOWNLOAD;
+
+            m_webRequest = UnityWebRequest.Get(m_url);
+            m_webRequest.SendWebRequest();
+
+            while (m_webRequest.downloadProgress < 1.0)
             {
-                if (m_WebRequest.error != null)
+                if (m_webRequest.error != null)
                 {
-                    if (OnError != null)
-                        OnError("下载中断，请重启App " + FileName + "       " + m_WebRequest.error);
+                    OnErrorThrown?.Invoke("下载中断，请重启App :" + FileName + " " + m_webRequest.error);
+                    //if (OnErrorThrown != null)
+                    //    OnErrorThrown("下载中断，请重启App " + FileName + "       " + m_webRequest.error);
                     yield return new WaitForEndOfFrame();
-                    Debug.LogError(m_WebRequest.error);
+
+                    Debug.LogError("<color=red> Download Failed! File Name :" + FileName + " Error Message :" + m_webRequest.error + "</color>");
                 }
                 yield return new WaitForEndOfFrame();
-                m_Progress = m_WebRequest.downloadProgress;
-                m_Info.DownloadProgress = m_WebRequest.downloadProgress;
+
+                m_progress = m_webRequest.downloadProgress;
+                m_info.DownloadProgress = m_webRequest.downloadProgress;
             }
-            if (m_WebRequest.error != null)
+            if (m_webRequest.error != null)
             {
-                if (OnError != null)
-                    OnError("下载异常，请重启App " + FileName + "       " + m_WebRequest.error);
+                OnErrorThrown?.Invoke("下载中断，请重启App :" + FileName + " " + m_webRequest.error);
+                //if (OnErrorThrown != null)
+                //    OnErrorThrown("下载异常，请重启App " + FileName + "       " + m_webRequest.error);
                 yield return new WaitForEndOfFrame();
-                Debug.LogError(m_WebRequest.error);
+
+                Debug.LogError("<color=red> Download Failed! File Name :" + FileName + " Error Message :" + m_webRequest.error + "</color>");
             }
             yield return new WaitForEndOfFrame();
-            m_StartDownLoad = false;
-            m_Progress = 1f;
-            m_Info.DownloadProgress = 1f;
+
+            m_startDownLoad = false;
+            m_progress = 1f;
+            m_info.DownloadProgress = 1f;
+
             yield return new WaitForEndOfFrame();
-            if (m_WebRequest.isDone && m_WebRequest.error == null)
+
+            if (m_webRequest.isDone && m_webRequest.error == null)
             {
                 yield return new WaitForEndOfFrame();
+
                 string dir = Application.persistentDataPath;
+
                 if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
+
                 yield return new WaitForEndOfFrame();
-                Debug.Log((m_Patch.Name + "   NeedUncompress : " + NeedUncompress().ToString()));
+
+                Debug.Log((m_patch.Name + "   NeedUncompress : " + NeedUncompress().ToString()));
+
                 if (NeedUncompress())
                 {
-                    m_Info.CurrentState = DownloadInfo.State.UnpackZip;
-                    yield return Singleton<ZipUtil>.Instance.SaveZip(m_UnpackPath, m_WebRequest.downloadHandler.data, OnUnpackZipProgressUpdate);
-                    if (m_ZipFileCreateEnable)
+                    m_info.CurrentState = DownloadInfo.State.UNPACK_ZIP;
+                    yield return ZipUtil.Instance.SaveZip(m_unpackPath, m_webRequest.downloadHandler.data, OnUnpackZipProgressUpdate);
+                    if (m_zipFileCreateEnable)
                     {
-                        m_Info.CurrentState = DownloadInfo.State.CreateFile;
-                        yield return Singleton<FileUtil>.Instance.CreateFile(m_SaveFilePath, m_WebRequest.downloadHandler.data, OnCreateFileProgressUpdate);
+                        m_info.CurrentState = DownloadInfo.State.CREATE_FILE;
+                        yield return FileUtil.Instance.CreateFile(m_saveFilePath, m_webRequest.downloadHandler.data, OnCreateFileProgressUpdate);
                     }
                 }
                 else
                 {
-                    m_Info.CurrentState = DownloadInfo.State.CreateFile;
-                    yield return Singleton<FileUtil>.Instance.CreateFile(m_SaveFilePath, m_WebRequest.downloadHandler.data, OnCreateFileProgressUpdate);
+                    m_info.CurrentState = DownloadInfo.State.CREATE_FILE;
+                    yield return FileUtil.Instance.CreateFile(m_saveFilePath, m_webRequest.downloadHandler.data, OnCreateFileProgressUpdate);
                 }
                 yield return new WaitForEndOfFrame();
-                m_Info.CurrentState = DownloadInfo.State.Completed;
+                m_info.CurrentState = DownloadInfo.State.COMPLETE;
                 yield return new WaitForEndOfFrame();
-                if (completeCallback != null)
-                    completeCallback();
+                completeCallback?.Invoke();
+                //if (completeCallback != null)
+                //    completeCallback();
                 dir = null;
             }
         }
 
-        public void OnUnpackZipProgressUpdate(float progress) => m_Info.UnpackZipProgress = progress;
+        public void OnUnpackZipProgressUpdate(float progress)
+        {
+            m_info.UnpackZipProgress = progress;
+        }
 
-        public void OnCreateFileProgressUpdate(float progress) => m_Info.CreateFileProgress = progress;
+        public void OnCreateFileProgressUpdate(float progress)
+        {
+            m_info.CreateFileProgress = progress;
+        }
 
-        public override long GetCurLength() => (long)(m_WebRequest != null ? m_WebRequest.downloadedBytes : 0L);
+        public override long GetCurLength()
+        {
+            return (long)(m_webRequest != null ? m_webRequest.downloadedBytes : 0L);
+        }
 
         public override long GetLength() => 0;
 
         public override void Destory()
         {
-            if (m_WebRequest == null)
+            if (m_webRequest == null)
                 return;
-            m_WebRequest.Dispose();
-            m_WebRequest = null;
+            m_webRequest.Dispose();
+            m_webRequest = null;
         }
     }
 }

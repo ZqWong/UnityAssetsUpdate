@@ -4,14 +4,45 @@ namespace RU.Core.Download
 {
     public class DownloadInfo
     {
+        /// <summary>
+        /// Download task name
+        /// </summary>
         public string Name;
+
+        /// <summary>
+        /// Is need unpack zip
+        /// </summary>
         public bool NeedUnpackZip;
+
+        /// <summary>
+        /// Currrent file prasing status
+        /// </summary>
+        public DownloadInfo.State currentState = DownloadInfo.State.NONE;
+
+        /// <summary>
+        /// Current download progress
+        /// </summary>
         private float downloadProgress = 0.0f;
+
+        /// <summary>
+        /// Current unpack progress
+        /// </summary>
         private float unpackZipProgress = 0.0f;
+
+        /// <summary>
+        /// Current create file progress
+        /// </summary>
         private float createFileProgress = 0.0f;
-        public DownloadInfo.State currentState = DownloadInfo.State.None;
+
+        /// <summary>
+        /// Current download progress value
+        /// </summary>
         private Action<string, float> UpdateProgress;
-        private bool m_ZipFileCreateEnable;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private bool m_zipFileCreateEnable;
 
         public DownloadInfo(
           string name,
@@ -22,7 +53,7 @@ namespace RU.Core.Download
             Name = name;
             NeedUnpackZip = needUnpackZip;
             UpdateProgress = updateProgress;
-            m_ZipFileCreateEnable = zipFileCreateEnable;
+            m_zipFileCreateEnable = zipFileCreateEnable;
         }
 
         public float DownloadProgress
@@ -69,23 +100,23 @@ namespace RU.Core.Download
         {
             if (!NeedUnpackZip)
                 return (float)((double)DownloadProgress * 0.699999988079071 + (double)CreateFileProgress * 0.300000011920929);
-            return m_ZipFileCreateEnable ? (float)((double)DownloadProgress * 0.400000005960464 + (double)CreateFileProgress * 0.300000011920929 + (double)UnpackZipProgress * 0.300000011920929) : (float)((double)DownloadProgress * 0.699999988079071 + (double)UnpackZipProgress * 0.300000011920929);
+            return m_zipFileCreateEnable ? (float)((double)DownloadProgress * 0.400000005960464 + (double)CreateFileProgress * 0.300000011920929 + (double)UnpackZipProgress * 0.300000011920929) : (float)((double)DownloadProgress * 0.699999988079071 + (double)UnpackZipProgress * 0.300000011920929);
         }
 
         public string GetStateInfo()
         {
             switch (CurrentState)
             {
-                case DownloadInfo.State.None:
-                    return "正在准备开始  " + Name;
-                case DownloadInfo.State.Download:
-                    return "正在下载  " + Name;
-                case DownloadInfo.State.UnpackZip:
-                    return "正在解压  " + Name;
-                case DownloadInfo.State.CreateFile:
-                    return "正在创建  " + Name;
-                case DownloadInfo.State.Completed:
-                    return "已完成  " + Name;
+                case DownloadInfo.State.NONE:
+                    return "正在准备开始 :" + Name;
+                case DownloadInfo.State.DOWNLOAD:
+                    return "正在下载 :" + Name;
+                case DownloadInfo.State.UNPACK_ZIP:
+                    return "正在解压 :" + Name;
+                case DownloadInfo.State.CREATE_FILE:
+                    return "正在创建 :" + Name;
+                case DownloadInfo.State.COMPLETE:
+                    return "已完成 :" + Name;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -100,11 +131,11 @@ namespace RU.Core.Download
 
         public enum State
         {
-            None,
-            Download,
-            UnpackZip,
-            CreateFile,
-            Completed,
+            NONE,
+            DOWNLOAD,
+            UNPACK_ZIP,
+            CREATE_FILE,
+            COMPLETE,
         }
     }
 }
