@@ -1,6 +1,7 @@
-// DeflaterOutputStream.cs
+// InflaterInputStream.cs
 //
 // Copyright (C) 2001 Mike Krueger
+// Copyright (C) 2004 John Reilly
 //
 // This file was translated from java, it was part of the GNU Classpath
 // Copyright (C) 2001 Free Software Foundation, Inc.
@@ -37,345 +38,496 @@
 // exception statement from your version.
 
 // HISTORY
-//	22-12-2009	DavidPierson	Added AES support
+//	11-08-2009	GeoffHart	T9121	Added Multi-member gzip support
 
 using System;
 using System.IO;
 
 #if !NETCF_1_0
 using System.Security.Cryptography;
-using ICSharpCode.SharpZipLib.Encryption;
 #endif
 
 namespace ICSharpCode.SharpZipLib.Zip.Compression.Streams 
 {
+
 	/// <summary>
-	/// A special stream deflating or compressing the bytes that are
-	/// written to it.  It uses a Deflater to perform actual deflating.<br/>
-	/// Authors of the original java version : Tom Tromey, Jochen Hoenicke 
+	/// An input buffer customised for use by <see cref="InflaterInputStream"/>
 	/// </summary>
-	public class DeflaterOutputStream : Stream
+	/// <remarks>
+	/// The buffer supports decryption of incoming data.
+	/// </remarks>
+	public class InflaterInputBuffer
 	{
 		#region Constructors
 		/// <summary>
-		/// Creates a new DeflaterOutputStream with a default Deflater and default buffer size.
+		/// Initialise a new instance of <see cref="InflaterInputBuffer"/> with a default buffer size
 		/// </summary>
-		/// <param name="baseOutputStream">
-		/// the output stream where deflated output should be written.
-		/// </param>
-		public DeflaterOutputStream(Stream baseOutputStream)
-			: this(baseOutputStream, new Deflater(), 512)
+		/// <param name="stream">The stream to buffer.</param>
+		public InflaterInputBuffer(Stream stream) : this(stream , 4096)
 		{
 		}
 		
 		/// <summary>
-		/// Creates a new DeflaterOutputStream with the given Deflater and
-		/// default buffer size.
+		/// Initialise a new instance of <see cref="InflaterInputBuffer"/>
 		/// </summary>
-		/// <param name="baseOutputStream">
-		/// the output stream where deflated output should be written.
-		/// </param>
-		/// <param name="deflater">
-		/// the underlying deflater.
-		/// </param>
-		public DeflaterOutputStream(Stream baseOutputStream, Deflater deflater)
-			: this(baseOutputStream, deflater, 512)
+		/// <param name="stream">The stream to buffer.</param>
+		/// <param name="bufferSize">The size to use for the buffer</param>
+		/// <remarks>A minimum buffer size of 1KB is permitted.  Lower sizes are treated as 1KB.</remarks>
+		public InflaterInputBuffer(Stream stream, int bufferSize)
 		{
+			inputStream = stream;
+			if ( bufferSize < 1024 ) {
+				bufferSize = 1024;
+			}
+			rawData = new byte[bufferSize];
+			clearText = rawData;
+		}
+		#endregion
+
+		/// <summary>
+		/// Get the length of bytes bytes in the <see cref="RawData"/>
+		/// </summary>
+		public int RawLength
+		{
+			get { 
+				return rawLength; 
+			}
 		}
 		
 		/// <summary>
-		/// Creates a new DeflaterOutputStream with the given Deflater and
-		/// buffer size.
+		/// Get the contents of the raw data buffer.
 		/// </summary>
-		/// <param name="baseOutputStream">
-		/// The output stream where deflated output is written.
-		/// </param>
-		/// <param name="deflater">
-		/// The underlying deflater to use
-		/// </param>
-		/// <param name="bufferSize">
-		/// The buffer size in bytes to use when deflating (minimum value 512)
-		/// </param>
-		/// <exception cref="ArgumentOutOfRangeException">
-		/// bufsize is less than or equal to zero.
-		/// </exception>
-		/// <exception cref="ArgumentException">
-		/// baseOutputStream does not support writing
-		/// </exception>
-		/// <exception cref="ArgumentNullException">
-		/// deflater instance is null
-		/// </exception>
-		public DeflaterOutputStream(Stream baseOutputStream, Deflater deflater, int bufferSize)
+		/// <remarks>This may contain encrypted data.</remarks>
+		public byte[] RawData
 		{
-			if ( baseOutputStream == null ) {
-				throw new ArgumentNullException("baseOutputStream");
+			get {
+				return rawData;
 			}
-
-			if (baseOutputStream.CanWrite == false) {
-				throw new ArgumentException("Must support writing", "baseOutputStream");
+		}
+		
+		/// <summary>
+		/// Get the number of useable bytes in <see cref="ClearText"/>
+		/// </summary>
+		public int ClearTextLength
+		{
+			get {
+				return clearTextLength;
 			}
+		}
+		
+		/// <summary>
+		/// Get the contents of the clear text buffer.
+		/// </summary>
+		public byte[] ClearText
+		{
+			get {
+				return clearText;
+			}
+		}
+		
+		/// <summary>
+		/// Get/set the number of bytes available
+		/// </summary>
+		public int Available
+		{
+			get { return available; }
+			set { available = value; }
+		}
 
-			if (deflater == null) {
-				throw new ArgumentNullException("deflater");
+		/// <summary>
+		/// Call <see cref="Inflater.SetInput(byte[], int, int)"/> passing the current clear text buffer contents.
+		/// </summary>
+		/// <param name="inflater">The inflater to set input for.</param>
+		public void SetInflaterInput(Inflater inflater)
+		{
+			if ( available > 0 ) {
+				inflater.SetInput(clearText, clearTextLength - available, available);
+				available = 0;
+			}
+		}
+
+		/// <summary>
+		/// Fill the buffer from the underlying input stream.
+		/// </summary>
+		public void Fill()
+		{
+			rawLength = 0;
+			int toRead = rawData.Length;
+			
+			while (toRead > 0) {
+				int count = inputStream.Read(rawData, rawLength, toRead);
+				if ( count <= 0 ) {
+					break;
+				}
+				rawLength += count;
+				toRead -= count;
 			}
 			
-			if (bufferSize < 512) {
+#if !NETCF_1_0
+			if ( cryptoTransform != null ) {
+				clearTextLength = cryptoTransform.TransformBlock(rawData, 0, rawLength, clearText, 0);
+			}
+			else 
+#endif				
+			{
+				clearTextLength = rawLength;
+			}
+
+			available = clearTextLength;
+		}
+		
+		/// <summary>
+		/// Read a buffer directly from the input stream
+		/// </summary>
+		/// <param name="buffer">The buffer to fill</param>
+		/// <returns>Returns the number of bytes read.</returns>
+		public int ReadRawBuffer(byte[] buffer)
+		{
+			return ReadRawBuffer(buffer, 0, buffer.Length);
+		}
+
+		/// <summary>
+		/// Read a buffer directly from the input stream
+		/// </summary>
+		/// <param name="outBuffer">The buffer to read into</param>
+		/// <param name="offset">The offset to start reading data into.</param>
+		/// <param name="length">The number of bytes to read.</param>
+		/// <returns>Returns the number of bytes read.</returns>
+		public int ReadRawBuffer(byte[] outBuffer, int offset, int length)
+		{
+			if ( length < 0 ) {
+				throw new ArgumentOutOfRangeException("length");
+			}
+			
+			int currentOffset = offset;
+			int currentLength = length;
+			
+			while ( currentLength > 0 ) {
+				if ( available <= 0 ) {
+					Fill();
+					if (available <= 0) {
+						return 0;
+					}
+				}
+				int toCopy = Math.Min(currentLength, available);
+				System.Array.Copy(rawData, rawLength - (int)available, outBuffer, currentOffset, toCopy);
+				currentOffset += toCopy;
+				currentLength -= toCopy;
+				available -= toCopy;
+			}
+			return length;
+		}
+		
+		/// <summary>
+		/// Read clear text data from the input stream.
+		/// </summary>
+		/// <param name="outBuffer">The buffer to add data to.</param>
+		/// <param name="offset">The offset to start adding data at.</param>
+		/// <param name="length">The number of bytes to read.</param>
+		/// <returns>Returns the number of bytes actually read.</returns>
+		public int ReadClearTextBuffer(byte[] outBuffer, int offset, int length)
+		{
+			if ( length < 0 ) {
+				throw new ArgumentOutOfRangeException("length");
+			}
+			
+			int currentOffset = offset;
+			int currentLength = length;
+			
+			while ( currentLength > 0 ) {
+				if ( available <= 0 ) {
+					Fill();
+					if (available <= 0) {
+						return 0;
+					}
+				}
+				
+				int toCopy = Math.Min(currentLength, available);
+				Array.Copy(clearText, clearTextLength - (int)available, outBuffer, currentOffset, toCopy);
+				currentOffset += toCopy;
+				currentLength -= toCopy;
+				available -= toCopy;
+			}
+			return length;
+		}
+		
+		/// <summary>
+		/// Read a <see cref="byte"/> from the input stream.
+		/// </summary>
+		/// <returns>Returns the byte read.</returns>
+		public int ReadLeByte()
+		{
+			if (available <= 0) {
+				Fill();
+				if (available <= 0) {
+					throw new ZipException("EOF in header");
+				}
+			}
+			byte result = rawData[rawLength - available];
+			available -= 1;
+			return result;
+		}
+		
+		/// <summary>
+		/// Read an <see cref="short"/> in little endian byte order.
+		/// </summary>
+		/// <returns>The short value read case to an int.</returns>
+		public int ReadLeShort()
+		{
+			return ReadLeByte() | (ReadLeByte() << 8);
+		}
+		
+		/// <summary>
+		/// Read an <see cref="int"/> in little endian byte order.
+		/// </summary>
+		/// <returns>The int value read.</returns>
+		public int ReadLeInt()
+		{
+			return ReadLeShort() | (ReadLeShort() << 16);
+		}
+		
+		/// <summary>
+		/// Read a <see cref="long"/> in little endian byte order.
+		/// </summary>
+		/// <returns>The long value read.</returns>
+		public long ReadLeLong()
+		{
+			return (uint)ReadLeInt() | ((long)ReadLeInt() << 32);
+		}
+
+#if !NETCF_1_0
+		/// <summary>
+		/// Get/set the <see cref="ICryptoTransform"/> to apply to any data.
+		/// </summary>
+		/// <remarks>Set this value to null to have no transform applied.</remarks>
+		public ICryptoTransform CryptoTransform
+		{
+			set { 
+				cryptoTransform = value;
+				if ( cryptoTransform != null ) {
+					if ( rawData == clearText ) {
+						if ( internalClearText == null ) {
+							internalClearText = new byte[rawData.Length];
+						}
+						clearText = internalClearText;
+					}
+					clearTextLength = rawLength;
+					if ( available > 0 ) {
+						cryptoTransform.TransformBlock(rawData, rawLength - available, available, clearText, rawLength - available);
+					}
+				} else {
+					clearText = rawData;
+					clearTextLength = rawLength;
+				}
+			}
+		}
+#endif
+
+		#region Instance Fields
+		int rawLength;
+		byte[] rawData;
+		
+		int clearTextLength;
+		byte[] clearText;
+#if !NETCF_1_0		
+		byte[] internalClearText;
+#endif
+		
+		int available;
+		
+#if !NETCF_1_0
+		ICryptoTransform cryptoTransform;
+#endif		
+		Stream inputStream;
+		#endregion
+	}
+	
+	/// <summary>
+	/// This filter stream is used to decompress data compressed using the "deflate"
+	/// format. The "deflate" format is described in RFC 1951.
+	///
+	/// This stream may form the basis for other decompression filters, such
+	/// as the <see cref="ICSharpCode.SharpZipLib.GZip.GZipInputStream">GZipInputStream</see>.
+	///
+	/// Author of the original java version : John Leuner.
+	/// </summary>
+	public class InflaterInputStream : Stream
+	{
+		#region Constructors
+		/// <summary>
+		/// Create an InflaterInputStream with the default decompressor
+		/// and a default buffer size of 4KB.
+		/// </summary>
+		/// <param name = "baseInputStream">
+		/// The InputStream to read bytes from
+		/// </param>
+		public InflaterInputStream(Stream baseInputStream)
+			: this(baseInputStream, new Inflater(), 4096)
+		{
+		}
+		
+		/// <summary>
+		/// Create an InflaterInputStream with the specified decompressor
+		/// and a default buffer size of 4KB.
+		/// </summary>
+		/// <param name = "baseInputStream">
+		/// The source of input data
+		/// </param>
+		/// <param name = "inf">
+		/// The decompressor used to decompress data read from baseInputStream
+		/// </param>
+		public InflaterInputStream(Stream baseInputStream, Inflater inf)
+			: this(baseInputStream, inf, 4096)
+		{
+		}
+		
+		/// <summary>
+		/// Create an InflaterInputStream with the specified decompressor
+		/// and the specified buffer size.
+		/// </summary>
+		/// <param name = "baseInputStream">
+		/// The InputStream to read bytes from
+		/// </param>
+		/// <param name = "inflater">
+		/// The decompressor to use
+		/// </param>
+		/// <param name = "bufferSize">
+		/// Size of the buffer to use
+		/// </param>
+		public InflaterInputStream(Stream baseInputStream, Inflater inflater, int bufferSize)
+		{
+			if (baseInputStream == null) {
+				throw new ArgumentNullException("baseInputStream");
+			}
+			
+			if (inflater == null) {
+				throw new ArgumentNullException("inflater");
+			}
+			
+			if (bufferSize <= 0) {
 				throw new ArgumentOutOfRangeException("bufferSize");
 			}
 			
-			baseOutputStream_ = baseOutputStream;
-			buffer_ = new byte[bufferSize];
-			deflater_ = deflater;
-		}
-		#endregion
-		
-		#region Public API
-		/// <summary>
-		/// Finishes the stream by calling finish() on the deflater. 
-		/// </summary>
-		/// <exception cref="SharpZipBaseException">
-		/// Not all input is deflated
-		/// </exception>
-		public virtual void Finish()
-		{
-			deflater_.Finish();
-			while (!deflater_.IsFinished)  {
-				int len = deflater_.Deflate(buffer_, 0, buffer_.Length);
-				if (len <= 0) {
-					break;
-				}
-
-#if NETCF_1_0
-				if ( keys != null ) {
-#else
-				if (cryptoTransform_ != null) {
-#endif	
-					EncryptBlock(buffer_, 0, len);
-				}
-				
-				baseOutputStream_.Write(buffer_, 0, len);
-			}
-
-			if (!deflater_.IsFinished) {
-				throw new SharpZipBaseException("Can't deflate all input?");
-			}
-
-			baseOutputStream_.Flush();
+			this.baseInputStream = baseInputStream;
+			this.inf = inflater;
 			
-#if NETCF_1_0
-			if ( keys != null ) {
-				keys = null;
-			}
-#else
-			if (cryptoTransform_ != null) {
-#if !NET_1_1 && !NETCF_2_0
-				if (cryptoTransform_ is ZipAESTransform) {
-					AESAuthCode = ((ZipAESTransform)cryptoTransform_).GetAuthCode();
-				}
-#endif
-				cryptoTransform_.Dispose();
-				cryptoTransform_ = null;
-			}
-#endif			
+			inputBuffer = new InflaterInputBuffer(baseInputStream, bufferSize);
 		}
 		
+		#endregion
+
 		/// <summary>
-		/// Get/set flag indicating ownership of the underlying stream.
-		/// When the flag is true <see cref="Close"></see> will close the underlying stream also.
+		/// Get/set flag indicating ownership of underlying stream.
+		/// When the flag is true <see cref="Close"/> will close the underlying stream also.
 		/// </summary>
+		/// <remarks>
+		/// The default value is true.
+		/// </remarks>
 		public bool IsStreamOwner
 		{
-			get { return isStreamOwner_; }
-			set { isStreamOwner_ = value; }
+			get { return isStreamOwner; }
+			set { isStreamOwner = value; }
 		}
 		
-		///	<summary>
-		/// Allows client to determine if an entry can be patched after its added
-		/// </summary>
-		public bool CanPatchEntries {
-			get { 
-				return baseOutputStream_.CanSeek; 
-			}
-		}
-		
-		#endregion
-		
-		#region Encryption
-		
-		string password;
-		
-#if NETCF_1_0
-		uint[] keys;
-#else
-		ICryptoTransform cryptoTransform_;
-
 		/// <summary>
-		/// Returns the 10 byte AUTH CODE to be appended immediately following the AES data stream.
+		/// Skip specified number of bytes of uncompressed data
 		/// </summary>
-		protected byte[] AESAuthCode;
-#endif
-		
-		/// <summary>
-		/// Get/set the password used for encryption.
-		/// </summary>
-		/// <remarks>When set to null or if the password is empty no encryption is performed</remarks>
-		public string Password {
-			get { 
-				return password; 
-			}
-			set {
-				if ( (value != null) && (value.Length == 0) ) {
-					password = null;
-				} else {
-					password = value; 
-				}
-			}
-		}
-
-		/// <summary>
-		/// Encrypt a block of data
-		/// </summary>
-		/// <param name="buffer">
-		/// Data to encrypt.  NOTE the original contents of the buffer are lost
+		/// <param name ="count">
+		/// Number of bytes to skip
 		/// </param>
-		/// <param name="offset">
-		/// Offset of first byte in buffer to encrypt
-		/// </param>
-		/// <param name="length">
-		/// Number of bytes in buffer to encrypt
-		/// </param>
-		protected void EncryptBlock(byte[] buffer, int offset, int length)
-		{
-#if NETCF_1_0
-			for (int i = offset; i < offset + length; ++i) {
-				byte oldbyte = buffer[i];
-				buffer[i] ^= EncryptByte();
-				UpdateKeys(oldbyte);
-			}
-#else
-			cryptoTransform_.TransformBlock(buffer, 0, length, buffer, 0);
-#endif
-		}
-
-		/// <summary>
-		/// Initializes encryption keys based on given <paramref name="password"/>.
-		/// </summary>
-		/// <param name="password">The password.</param>
-		protected void InitializePassword(string password)
-		{
-#if NETCF_1_0
-			keys = new uint[] {
-				0x12345678,
-				0x23456789,
-				0x34567890
-			};
-			
-			byte[] rawPassword = ZipConstants.ConvertToArray(password);
-			
-			for (int i = 0; i < rawPassword.Length; ++i) {
-				UpdateKeys((byte)rawPassword[i]);
-			}
-			
-#else			
-			PkzipClassicManaged pkManaged = new PkzipClassicManaged();
-			byte[] key = PkzipClassic.GenerateKeys(ZipConstants.ConvertToArray(password));
-			cryptoTransform_ = pkManaged.CreateEncryptor(key, null);
-#endif
-		}
-
-#if !NET_1_1 && !NETCF_2_0
-		/// <summary>
-		/// Initializes encryption keys based on given password.
-		/// </summary>
-		protected void InitializeAESPassword(ZipEntry entry, string rawPassword,
-											out byte[] salt, out byte[] pwdVerifier) {
-			salt = new byte[entry.AESSaltLen];
-			// Salt needs to be cryptographically random, and unique per file
-			if (_aesRnd == null)
-				_aesRnd = new RNGCryptoServiceProvider();
-			_aesRnd.GetBytes(salt);
-			int blockSize = entry.AESKeySize / 8;	// bits to bytes
-
-			cryptoTransform_ = new ZipAESTransform(rawPassword, salt, blockSize, true);
-			pwdVerifier = ((ZipAESTransform)cryptoTransform_).PwdVerifier;
-		}
-#endif
-
-#if NETCF_1_0
-		
-		/// <summary>
-		/// Encrypt a single byte 
-		/// </summary>
 		/// <returns>
-		/// The encrypted value
+		/// The number of bytes skipped, zero if the end of 
+		/// stream has been reached
 		/// </returns>
-		protected byte EncryptByte()
+		/// <exception cref="ArgumentOutOfRangeException">
+		/// <paramref name="count">The number of bytes</paramref> to skip is less than or equal to zero.
+		/// </exception>
+		public long Skip(long count)
 		{
-			uint temp = ((keys[2] & 0xFFFF) | 2);
-			return (byte)((temp * (temp ^ 1)) >> 8);
-		}
-
-		/// <summary>
-		/// Update encryption keys 
-		/// </summary>		
-		protected void UpdateKeys(byte ch)
-		{
-			keys[0] = Crc32.ComputeCrc32(keys[0], ch);
-			keys[1] = keys[1] + (byte)keys[0];
-			keys[1] = keys[1] * 134775813 + 1;
-			keys[2] = Crc32.ComputeCrc32(keys[2], (byte)(keys[1] >> 24));
-		}
-#endif
-
-		#endregion
-
-		#region Deflation Support
-		/// <summary>
-		/// Deflates everything in the input buffers.  This will call
-		/// <code>def.deflate()</code> until all bytes from the input buffers
-		/// are processed.
-		/// </summary>
-		protected void Deflate()
-		{
-			while (!deflater_.IsNeedingInput) 
-			{
-				int deflateCount = deflater_.Deflate(buffer_, 0, buffer_.Length);
-				
-				if (deflateCount <= 0) {
-					break;
-				}
-#if NETCF_1_0
-				if (keys != null) 
-#else
-				if (cryptoTransform_ != null) 
-#endif
-				{
-					EncryptBlock(buffer_, 0, deflateCount);
-				}
-				
-				baseOutputStream_.Write(buffer_, 0, deflateCount);
+			if (count <= 0) {
+				throw new ArgumentOutOfRangeException("count");
 			}
 			
-			if (!deflater_.IsNeedingInput) {
-				throw new SharpZipBaseException("DeflaterOutputStream can't deflate all input?");
+			// v0.80 Skip by seeking if underlying stream supports it...
+			if (baseInputStream.CanSeek) {
+				baseInputStream.Seek(count, SeekOrigin.Current);
+				return count;
+			} 
+			else {
+				int length = 2048;
+				if (count < length) {
+					length = (int) count;
+				}
+
+				byte[] tmp = new byte[length];
+				int readCount = 1;
+				long toSkip = count;
+
+				while ((toSkip > 0) && (readCount > 0) ) {
+					if (toSkip < length) {
+						length = (int)toSkip;
+					}
+
+					readCount = baseInputStream.Read(tmp, 0, length);
+					toSkip -= readCount;
+				}
+
+				return count - toSkip;
 			}
 		}
-		#endregion
 		
+		/// <summary>
+		/// Clear any cryptographic state.
+		/// </summary>		
+		protected void StopDecrypting()
+		{
+#if !NETCF_1_0			
+			inputBuffer.CryptoTransform = null;
+#endif			
+		}
+
+		/// <summary>
+		/// Returns 0 once the end of the stream (EOF) has been reached.
+		/// Otherwise returns 1.
+		/// </summary>
+		public virtual int Available 
+		{
+			get {
+				return inf.IsFinished ? 0 : 1;
+			}
+		}
+		
+		/// <summary>
+		/// Fills the buffer with more data to decompress.
+		/// </summary>
+		/// <exception cref="SharpZipBaseException">
+		/// Stream ends early
+		/// </exception>
+		protected void Fill()
+		{
+			// Protect against redundant calls
+			if (inputBuffer.Available <= 0) {
+				inputBuffer.Fill();
+				if (inputBuffer.Available <= 0) {
+					throw new SharpZipBaseException("Unexpected EOF");
+				}
+			}
+			inputBuffer.SetInflaterInput(inf);
+		}
+
 		#region Stream Overrides
 		/// <summary>
-		/// Gets value indicating stream can be read from
+		/// Gets a value indicating whether the current stream supports reading
 		/// </summary>
 		public override bool CanRead 
 		{
 			get {
-				return false;
+				return baseInputStream.CanRead;
 			}
 		}
 		
 		/// <summary>
-		/// Gets a value indicating if seeking is supported for this stream
-		/// This property always returns false
+		/// Gets a value of false indicating seeking is not supported for this stream.
 		/// </summary>
 		public override bool CanSeek {
 			get {
@@ -384,219 +536,197 @@ namespace ICSharpCode.SharpZipLib.Zip.Compression.Streams
 		}
 		
 		/// <summary>
-		/// Get value indicating if this stream supports writing
+		/// Gets a value of false indicating that this stream is not writeable.
 		/// </summary>
 		public override bool CanWrite {
 			get {
-				return baseOutputStream_.CanWrite;
+				return false;
 			}
 		}
 		
 		/// <summary>
-		/// Get current length of stream
+		/// A value representing the length of the stream in bytes.
 		/// </summary>
 		public override long Length {
 			get {
-				return baseOutputStream_.Length;
+				return inputBuffer.RawLength;
 			}
 		}
 		
 		/// <summary>
-		/// Gets the current position within the stream.
+		/// The current position within the stream.
+		/// Throws a NotSupportedException when attempting to set the position
 		/// </summary>
-		/// <exception cref="NotSupportedException">Any attempt to set position</exception>
+		/// <exception cref="NotSupportedException">Attempting to set the position</exception>
 		public override long Position {
 			get {
-				return baseOutputStream_.Position;
+				return baseInputStream.Position;
 			}
 			set {
-				throw new NotSupportedException("Position property not supported");
+				throw new NotSupportedException("InflaterInputStream Position not supported");
 			}
 		}
 		
 		/// <summary>
-		/// Sets the current position of this stream to the given value. Not supported by this class!
+		/// Flushes the baseInputStream
 		/// </summary>
-		/// <param name="offset">The offset relative to the <paramref name="origin"/> to seek.</param>
-		/// <param name="origin">The <see cref="SeekOrigin"/> to seek from.</param>
+		public override void Flush()
+		{
+			baseInputStream.Flush();
+		}
+		
+		/// <summary>
+		/// Sets the position within the current stream
+		/// Always throws a NotSupportedException
+		/// </summary>
+		/// <param name="offset">The relative offset to seek to.</param>
+		/// <param name="origin">The <see cref="SeekOrigin"/> defining where to seek from.</param>
 		/// <returns>The new position in the stream.</returns>
 		/// <exception cref="NotSupportedException">Any access</exception>
 		public override long Seek(long offset, SeekOrigin origin)
 		{
-			throw new NotSupportedException("DeflaterOutputStream Seek not supported");
+			throw new NotSupportedException("Seek not supported");
 		}
 		
 		/// <summary>
-		/// Sets the length of this stream to the given value. Not supported by this class!
+		/// Set the length of the current stream
+		/// Always throws a NotSupportedException
 		/// </summary>
-		/// <param name="value">The new stream length.</param>
+		/// <param name="value">The new length value for the stream.</param>
 		/// <exception cref="NotSupportedException">Any access</exception>
 		public override void SetLength(long value)
 		{
-			throw new NotSupportedException("DeflaterOutputStream SetLength not supported");
+			throw new NotSupportedException("InflaterInputStream SetLength not supported");
 		}
 		
 		/// <summary>
-		/// Read a byte from stream advancing position by one
+		/// Writes a sequence of bytes to stream and advances the current position
+		/// This method always throws a NotSupportedException
 		/// </summary>
-		/// <returns>The byte read cast to an int.  THe value is -1 if at the end of the stream.</returns>
-		/// <exception cref="NotSupportedException">Any access</exception>
-		public override int ReadByte()
-		{
-			throw new NotSupportedException("DeflaterOutputStream ReadByte not supported");
-		}
-		
-		/// <summary>
-		/// Read a block of bytes from stream
-		/// </summary>
-		/// <param name="buffer">The buffer to store read data in.</param>
-		/// <param name="offset">The offset to start storing at.</param>
-		/// <param name="count">The maximum number of bytes to read.</param>
-		/// <returns>The actual number of bytes read.  Zero if end of stream is detected.</returns>
-		/// <exception cref="NotSupportedException">Any access</exception>
-		public override int Read(byte[] buffer, int offset, int count)
-		{
-			throw new NotSupportedException("DeflaterOutputStream Read not supported");
-		}
-		
-		/// <summary>
-		/// Asynchronous reads are not supported a NotSupportedException is always thrown
-		/// </summary>
-		/// <param name="buffer">The buffer to read into.</param>
-		/// <param name="offset">The offset to start storing data at.</param>
-		/// <param name="count">The number of bytes to read</param>
-		/// <param name="callback">The async callback to use.</param>
-		/// <param name="state">The state to use.</param>
-		/// <returns>Returns an <see cref="IAsyncResult"/></returns>
-		/// <exception cref="NotSupportedException">Any access</exception>
-		public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
-		{
-			throw new NotSupportedException("DeflaterOutputStream BeginRead not currently supported");
-		}
-		
-		/// <summary>
-		/// Asynchronous writes arent supported, a NotSupportedException is always thrown
-		/// </summary>
-		/// <param name="buffer">The buffer to write.</param>
-		/// <param name="offset">The offset to begin writing at.</param>
+		/// <param name="buffer">Thew buffer containing data to write.</param>
+		/// <param name="offset">The offset of the first byte to write.</param>
 		/// <param name="count">The number of bytes to write.</param>
-		/// <param name="callback">The <see cref="AsyncCallback"/> to use.</param>
-		/// <param name="state">The state object.</param>
-		/// <returns>Returns an IAsyncResult.</returns>
+		/// <exception cref="NotSupportedException">Any access</exception>
+		public override void Write(byte[] buffer, int offset, int count)
+		{
+			throw new NotSupportedException("InflaterInputStream Write not supported");
+		}
+		
+		/// <summary>
+		/// Writes one byte to the current stream and advances the current position
+		/// Always throws a NotSupportedException
+		/// </summary>
+		/// <param name="value">The byte to write.</param>
+		/// <exception cref="NotSupportedException">Any access</exception>
+		public override void WriteByte(byte value)
+		{
+			throw new NotSupportedException("InflaterInputStream WriteByte not supported");
+		}
+		
+		/// <summary>
+		/// Entry point to begin an asynchronous write.  Always throws a NotSupportedException.
+		/// </summary>
+		/// <param name="buffer">The buffer to write data from</param>
+		/// <param name="offset">Offset of first byte to write</param>
+		/// <param name="count">The maximum number of bytes to write</param>
+		/// <param name="callback">The method to be called when the asynchronous write operation is completed</param>
+		/// <param name="state">A user-provided object that distinguishes this particular asynchronous write request from other requests</param>
+		/// <returns>An <see cref="System.IAsyncResult">IAsyncResult</see> that references the asynchronous write</returns>
 		/// <exception cref="NotSupportedException">Any access</exception>
 		public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
 		{
-			throw new NotSupportedException("BeginWrite is not supported");
+			throw new NotSupportedException("InflaterInputStream BeginWrite not supported");
 		}
 		
 		/// <summary>
-		/// Flushes the stream by calling <see cref="DeflaterOutputStream.Flush">Flush</see> on the deflater and then
-		/// on the underlying stream.  This ensures that all bytes are flushed.
-		/// </summary>
-		public override void Flush()
-		{
-			deflater_.Flush();
-			Deflate();
-			baseOutputStream_.Flush();
-		}
-		
-		/// <summary>
-		/// Calls <see cref="Finish"/> and closes the underlying
-		/// stream when <see cref="IsStreamOwner"></see> is true.
+		/// Closes the input stream.  When <see cref="IsStreamOwner"></see>
+		/// is true the underlying stream is also closed.
 		/// </summary>
 		public override void Close()
 		{
-			if ( !isClosed_ ) {
-				isClosed_ = true;
-
-				try {
-					Finish();
-#if NETCF_1_0
-					keys=null;
-#else
-					if ( cryptoTransform_ != null ) {
-						GetAuthCodeIfAES();
-						cryptoTransform_.Dispose();
-						cryptoTransform_ = null;
-					}
-#endif
-				}
-				finally {
-					if( isStreamOwner_ ) {
-						baseOutputStream_.Close();
-					}
+			if ( !isClosed ) {
+				isClosed = true;
+				if ( isStreamOwner ) {
+					baseInputStream.Close();
 				}
 			}
 		}
 
-		private void GetAuthCodeIfAES() {
-#if !NET_1_1 && !NETCF_2_0
-			if (cryptoTransform_ is ZipAESTransform) {
-				AESAuthCode = ((ZipAESTransform)cryptoTransform_).GetAuthCode();
+		/// <summary>
+		/// Reads decompressed data into the provided buffer byte array
+		/// </summary>
+		/// <param name ="buffer">
+		/// The array to read and decompress data into
+		/// </param>
+		/// <param name ="offset">
+		/// The offset indicating where the data should be placed
+		/// </param>
+		/// <param name ="count">
+		/// The number of bytes to decompress
+		/// </param>
+		/// <returns>The number of bytes read.  Zero signals the end of stream</returns>
+		/// <exception cref="SharpZipBaseException">
+		/// Inflater needs a dictionary
+		/// </exception>
+		public override int Read(byte[] buffer, int offset, int count) 
+		{
+			if (inf.IsNeedingDictionary)
+			{
+				throw new SharpZipBaseException("Need a dictionary");
 			}
-#endif
-		}
 
-		/// <summary>
-		/// Writes a single byte to the compressed output stream.
-		/// </summary>
-		/// <param name="value">
-		/// The byte value.
-		/// </param>
-		public override void WriteByte(byte value)
-		{
-			byte[] b = new byte[1];
-			b[0] = value;
-			Write(b, 0, 1);
+			int remainingBytes = count;
+			while (true) {
+				int bytesRead = inf.Inflate(buffer, offset, remainingBytes); 
+				offset += bytesRead;
+				remainingBytes -= bytesRead;
+
+				if (remainingBytes == 0 || inf.IsFinished) {
+					break; 
+				}
+
+				if ( inf.IsNeedingInput ) {
+					Fill();
+				}
+				else if ( bytesRead == 0 ) {
+					throw new ZipException("Dont know what to do");
+				}
+			}
+			return count - remainingBytes;
 		}
-		
-		/// <summary>
-		/// Writes bytes from an array to the compressed stream.
-		/// </summary>
-		/// <param name="buffer">
-		/// The byte array
-		/// </param>
-		/// <param name="offset">
-		/// The offset into the byte array where to start.
-		/// </param>
-		/// <param name="count">
-		/// The number of bytes to write.
-		/// </param>
-		public override void Write(byte[] buffer, int offset, int count)
-		{
-			deflater_.SetInput(buffer, offset, count);
-			Deflate();
-		}		
 		#endregion
-		
+
 		#region Instance Fields
 		/// <summary>
-		/// This buffer is used temporarily to retrieve the bytes from the
-		/// deflater and write them to the underlying output stream.
+		/// Decompressor for this stream
 		/// </summary>
-		byte[] buffer_;
+		protected Inflater inf;
+
+		/// <summary>
+		/// <see cref="InflaterInputBuffer">Input buffer</see> for this stream.
+		/// </summary>
+		protected InflaterInputBuffer inputBuffer;
+
+		/// <summary>
+		/// Base stream the inflater reads from.
+		/// </summary>
+		private Stream baseInputStream;
 		
 		/// <summary>
-		/// The deflater which is used to deflate the stream.
+		/// The compressed size
 		/// </summary>
-		protected Deflater deflater_;
-		
+		protected long csize;
+
 		/// <summary>
-		/// Base stream the deflater depends on.
+		/// Flag indicating wether this instance has been closed or not.
 		/// </summary>
-		protected Stream baseOutputStream_;
+		bool isClosed;
 
-		bool isClosed_;
-		
-		bool isStreamOwner_ = true;
-		#endregion
-
-		#region Static Fields
-
-#if !NET_1_1 && !NETCF_2_0
-		// Static to help ensure that multiple files within a zip will get different random salt
-		private static RNGCryptoServiceProvider _aesRnd;
-#endif
+		/// <summary>
+		/// Flag indicating wether this instance is designated the stream owner.
+		/// When closing if this flag is true the underlying stream is closed.
+		/// </summary>
+		bool isStreamOwner = true;
 		#endregion
 	}
 }
