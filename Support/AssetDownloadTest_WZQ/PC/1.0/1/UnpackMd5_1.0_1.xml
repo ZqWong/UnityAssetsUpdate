@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ZipMd5Data xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ZipMd5List ZipName="PC_TEST.zip">
+    <FileList Name="test1.txt" Md5="d41d8cd98f00b204e9800998ecf8427e" ZipName="PC_TEST.zip" UnpackPath="" />
+    <FileList Name="test2.txt" Md5="d41d8cd98f00b204e9800998ecf8427e" ZipName="PC_TEST.zip" UnpackPath="" />
+    <FileList Name="test3.txt" Md5="d41d8cd98f00b204e9800998ecf8427e" ZipName="PC_TEST.zip" UnpackPath="" />
+  </ZipMd5List>
+</ZipMd5Data>
