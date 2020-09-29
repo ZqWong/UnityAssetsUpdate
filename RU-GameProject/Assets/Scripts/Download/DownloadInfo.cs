@@ -58,7 +58,7 @@ namespace RU.Core.Download
 
         public float DownloadProgress
         {
-            get => downloadProgress;
+            get { return downloadProgress; }
             set
             {
                 downloadProgress = value;
@@ -68,7 +68,7 @@ namespace RU.Core.Download
 
         public float UnpackZipProgress
         {
-            get => unpackZipProgress;
+            get { return unpackZipProgress; }
             set
             {
                 unpackZipProgress = value;
@@ -78,7 +78,7 @@ namespace RU.Core.Download
 
         public float CreateFileProgress
         {
-            get => createFileProgress;
+            get { return createFileProgress; }
             set
             {
                 createFileProgress = value;
@@ -88,7 +88,7 @@ namespace RU.Core.Download
 
         public DownloadInfo.State CurrentState
         {
-            get => currentState;
+            get { return currentState; }
             set
             {
                 currentState = value;

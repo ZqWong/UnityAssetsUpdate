@@ -3,9 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using ETPVersionCheck.VersionUtil;
-using ETPVersionCheck.Download;
-using ETPVersionCheck.VersionCheck;
+using RU.Core.VersionCheck;
 
 public class VersionTest : MonoBehaviour
 {
@@ -59,7 +57,7 @@ public class VersionTest : MonoBehaviour
             ShowInfo(info);
         }
 
-        ShowString.Instance.Show = AddShow;
+        //ShowString.Instance.Show = AddShow;
     }
 
     // Use this for initialization

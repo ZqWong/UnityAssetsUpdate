@@ -56,12 +56,21 @@ namespace RU.Core.VersionCheck
         private float m_VersionCheckProgress = 0.0f;
         private float m_TargetVersionCheckProgress = 0.0f;
 
-        public string CurVersion => m_CurVersion;
+        public string CurVersion
+        {
+            get { return m_CurVersion; }
+        }
 
         //当前热更Patches    
-        public Pathces CurrentPatches => m_CurrentPatches;
+        public Pathces CurrentPatches
+        {
+            get { return m_CurrentPatches; }
+        }
 
-        public DownLoadFileItem CurrentDownLoadFileItem => m_CurDownload;
+        public DownLoadFileItem CurrentDownLoadFileItem
+        {
+            get { return m_CurDownload; }
+        }
 
         // 需要下载的资源总个数
         public int LoadFileCount { get; set; } = 0;
@@ -87,16 +96,16 @@ namespace RU.Core.VersionCheck
           string downLoadPath = "",
           string serverXmlPath = "",
           string localXmlPath = "",
-          Action<string, float> OnProgressSliderChange = null,
-          Action<string> OnItemError = null)
+          Action<string, float> progressSliderChangeHandler = null,
+          Action<string> itemErrorHandler = null)
         {
             m_Mono = mono;
             m_UnPackPath = !string.IsNullOrEmpty(unPackPath) ? unPackPath : Application.persistentDataPath + "/Origin";
             m_DownLoadPath = !string.IsNullOrEmpty(downLoadPath) ? downLoadPath : Application.persistentDataPath + "/DownLoad";
             m_ServerXmlPath = !string.IsNullOrEmpty(serverXmlPath) ? serverXmlPath : Application.persistentDataPath + "/ServerInfo.xml";
             m_LocalXmlPath = !string.IsNullOrEmpty(localXmlPath) ? localXmlPath : Application.persistentDataPath + "/LocalInfo.xml";
-            OnProgressSliderChange = OnProgressSliderChange;
-            ItemError = OnItemError;
+            OnProgressSliderChange = progressSliderChangeHandler;
+            ItemError = itemErrorHandler;
             m_Mono.StartCoroutine(CheckVersionCoroutine(serverInfoXmlUrl, hotCallBack));
         }
 
@@ -247,7 +256,7 @@ namespace RU.Core.VersionCheck
 
         private float VersionCheckProgress
         {
-            get => m_VersionCheckProgress;
+            get { return m_VersionCheckProgress;}
             set
             {
                 m_VersionCheckProgress = value;
@@ -415,7 +424,10 @@ namespace RU.Core.VersionCheck
         /// 获取下载进度
         /// </summary>
         /// <returns></returns>
-        public float GetProgress() => GetLoadSize() / LoadSumSize;
+        public float GetProgress()
+        {
+            return GetLoadSize() / LoadSumSize;
+        }
 
         /// <summary>
         /// 获取已经下载总大小
@@ -439,7 +451,10 @@ namespace RU.Core.VersionCheck
         /// </summary>
         /// <param name="callBack"></param>
         /// <returns></returns>
-        public void StartDownLoad(Action callBack, List<Patch> allPatch = null) => m_Mono.StartCoroutine(StartDownLoadAssets(callBack, allPatch));
+        public void StartDownLoad(Action callBack, List<Patch> allPatch = null)
+        {
+            m_Mono.StartCoroutine(StartDownLoadAssets(callBack, allPatch));
+        }
 
         private IEnumerator StartDownLoadAssets(Action callBack, List<Patch> allPatch = null)
         {
