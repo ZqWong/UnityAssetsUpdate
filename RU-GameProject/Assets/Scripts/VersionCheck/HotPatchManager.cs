@@ -12,7 +12,7 @@ namespace RU.Core.VersionCheck
 {
     public class HotPatchManager : Singleton<HotPatchManager>
     {
-        private MonoBehaviour m_Mono;
+        private MonoBehaviour m_mono;
         private string m_unPackPath = Application.persistentDataPath + "/Origin";
         private string m_downLoadPath = Application.persistentDataPath + "/DownLoad";
         private string m_curVersion;
@@ -121,14 +121,14 @@ namespace RU.Core.VersionCheck
           Action<string, float> progressSliderChangeHandler = null,
           Action<string> itemErrorHandler = null)
         {
-            m_Mono = mono;
+            m_mono = mono;
             m_unPackPath = !string.IsNullOrEmpty(unPackPath) ? unPackPath : Application.persistentDataPath + "/Origin";
             m_downLoadPath = !string.IsNullOrEmpty(downLoadPath) ? downLoadPath : Application.persistentDataPath + "/DownLoad";
             m_serverXmlPath = !string.IsNullOrEmpty(serverXmlPath) ? serverXmlPath : Application.persistentDataPath + "/ServerInfo.xml";
             m_localXmlPath = !string.IsNullOrEmpty(localXmlPath) ? localXmlPath : Application.persistentDataPath + "/LocalInfo.xml";
             OnProgressSliderChange = progressSliderChangeHandler;
             ItemError = itemErrorHandler;
-            m_Mono.StartCoroutine(CheckVersionCoroutine(serverInfoXmlUrl, hotCallBack));
+            m_mono.StartCoroutine(CheckVersionCoroutine(serverInfoXmlUrl, hotCallBack));
         }
 
         public IEnumerator CheckVersionCoroutine(string xmlUrl, Action<bool> hotCallBack = null)
@@ -475,7 +475,7 @@ namespace RU.Core.VersionCheck
         /// <returns></returns>
         public void StartDownLoad(Action callBack, List<Patch> allPatch = null)
         {
-            m_Mono.StartCoroutine(StartDownLoadAssets(callBack, allPatch));
+            m_mono.StartCoroutine(StartDownLoadAssets(callBack, allPatch));
         }
 
         private IEnumerator StartDownLoadAssets(Action callBack, List<Patch> allPatch = null)
@@ -499,7 +499,7 @@ namespace RU.Core.VersionCheck
             {
                 DownLoadFileItem downLoad = downLoadFileItem;
                 m_curDownload = downLoad;
-                yield return m_Mono.StartCoroutine(downLoad.Download((Action)null));
+                yield return m_mono.StartCoroutine(downLoad.Download((Action)null));
                 Patch patch = FindPatchByGamePath(downLoad.FileName);
                 if (patch != null)
                     m_AlreadyDownList.Add(patch);
