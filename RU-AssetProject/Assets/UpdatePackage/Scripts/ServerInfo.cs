@@ -17,12 +17,12 @@ public class VersionInfo
     [XmlAttribute]
     public string Version;
     [XmlElement]
-    public Pathces[] Pathces;
+    public Patches[] Patches;
 }
 
 //一个总补丁包
 [System.Serializable]
-public class Pathces
+public class Patches
 {
     [XmlAttribute]
     public int Version;

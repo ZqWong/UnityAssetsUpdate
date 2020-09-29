@@ -24,7 +24,7 @@ namespace RU.Core.VersionCheck
         private ServerInfo m_ServerInfo;
         private ServerInfo m_LocalInfo;
         private VersionInfo m_GameVersion;
-        private Pathces m_CurrentPatches;
+        private Patches m_CurrentPatches;
         //所有热更的东西
         private Dictionary<string, Patch> m_HotFixDic = new Dictionary<string, Patch>();        
         //所有需要下载的东西
@@ -61,7 +61,7 @@ namespace RU.Core.VersionCheck
         public string CurVersion => m_CurVersion;
 
         //当前热更Patches    
-        public Pathces CurrentPatches => m_CurrentPatches;
+        public Patches CurrentPatches => m_CurrentPatches;
 
         public DownLoadFileItem CurrentDownLoadFileItem => m_CurDownload;
 
@@ -182,7 +182,7 @@ namespace RU.Core.VersionCheck
                     }
                 }
             }
-            return versionInfo1 != null && m_GameVersion.Pathces != null && (versionInfo1.Pathces != null && m_GameVersion.Pathces.Length != 0) && m_GameVersion.Pathces[m_GameVersion.Pathces.Length - 1].Version != versionInfo1.Pathces[versionInfo1.Pathces.Length - 1].Version;
+            return versionInfo1 != null && m_GameVersion.Patches != null && (versionInfo1.Patches != null && m_GameVersion.Patches.Length != 0) && m_GameVersion.Patches[m_GameVersion.Patches.Length - 1].Version != versionInfo1.Patches[versionInfo1.Patches.Length - 1].Version;
         }
 
         /// <summary>
@@ -284,12 +284,12 @@ namespace RU.Core.VersionCheck
         /// </summary>
         private void GetHotAB()
         {
-            if (m_GameVersion == null || m_GameVersion.Pathces == null || (uint)m_GameVersion.Pathces.Length <= 0U)
+            if (m_GameVersion == null || m_GameVersion.Patches == null || (uint)m_GameVersion.Patches.Length <= 0U)
                 return;
-            Pathces pathce = m_GameVersion.Pathces[m_GameVersion.Pathces.Length - 1];
-            if (pathce != null && pathce.Files != null)
+            Patches patche = m_GameVersion.Patches[m_GameVersion.Patches.Length - 1];
+            if (patche != null && patche.Files != null)
             {
-                foreach (Patch file in pathce.Files)
+                foreach (Patch file in patche.Files)
                     m_HotFixDic.Add(file.Name, file);
             }
         }
@@ -304,9 +304,9 @@ namespace RU.Core.VersionCheck
             m_DownLoadDic.Clear();
             m_DownLoadMD5Dic.Clear();
             m_VersionCheckProgress = 0.0f;
-            if (m_GameVersion != null && m_GameVersion.Pathces != null && (uint)m_GameVersion.Pathces.Length > 0U)
+            if (m_GameVersion != null && m_GameVersion.Patches != null && (uint)m_GameVersion.Patches.Length > 0U)
             {
-                m_CurrentPatches = m_GameVersion.Pathces[m_GameVersion.Pathces.Length - 1];
+                m_CurrentPatches = m_GameVersion.Patches[m_GameVersion.Patches.Length - 1];
                 int fileCount = m_CurrentPatches.Files.Count;
                 float delta = 1f / (float)fileCount;
                 m_ZipMd5Data = new ZipMd5Data();

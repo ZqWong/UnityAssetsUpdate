@@ -356,10 +356,10 @@ public class CreateAssetBundle : MonoBehaviour
         }
         
         Clear_Directors(HOT_OUT_PATH);
-        Pathces pathces = new Pathces();
-        pathces.Version = int.Parse(hotCount);
-        pathces.Des = des;
-        pathces.Files = new List<Patch>();
+        Patches patches = new Patches();
+        patches.Version = int.Parse(hotCount);
+        patches.Des = des;
+        patches.Files = new List<Patch>();
 
         ////unpack.bytes////
         FileInfo unpackFileInfo = new FileInfo(bundleUnPackMd5Path);
@@ -390,7 +390,7 @@ public class CreateAssetBundle : MonoBehaviour
         unpackPatch.Size = unpackFileInfoExtend.FileInfo.Length / 1024.0f;
         unpackPatch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
         unpackPatch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
-        pathces.Files.Add(unpackPatch);
+        patches.Files.Add(unpackPatch);
         File.Delete(unpackFileInfoExtend.FileInfo.FullName);
         ///////////////////
 
@@ -428,12 +428,12 @@ public class CreateAssetBundle : MonoBehaviour
                 patch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
                 patch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
                 patch.RelativePath = changeList[i].RelativePath;
-                pathces.Files.Add(patch);
+                patches.Files.Add(patch);
             }
         }
 
         string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.xml";
-        BinarySerializeOpt.Xmlserialize(patchPath, pathces);
+        BinarySerializeOpt.Xmlserialize(patchPath, patches);
         EditorUtility.ClearProgressBar();
         Debug.Log("<color=yellow>"+"生成新的服务器配置表 ： " + patchPath + " </color>");
     }

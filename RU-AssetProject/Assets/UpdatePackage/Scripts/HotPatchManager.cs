@@ -24,8 +24,8 @@ public class HotPatchManager : Singleton<HotPatchManager>
     private ServerInfo m_LocalInfo;
     private VersionInfo m_GameVersion;
     //当前热更Patches
-    private Pathces m_CurrentPatches;
-    public Pathces CurrentPatches
+    private Patches m_CurrentPatches;
+    public Patches CurrentPatches
     {
         get { return m_CurrentPatches; }
     }
@@ -323,7 +323,7 @@ public class HotPatchManager : Singleton<HotPatchManager>
             }
         }
         // 
-        if (localGameVesion != null && m_GameVersion.Pathces != null && localGameVesion.Pathces != null && m_GameVersion.Pathces.Length > 0 && m_GameVersion.Pathces[m_GameVersion.Pathces.Length - 1].Version != localGameVesion.Pathces[localGameVesion.Pathces.Length - 1].Version)
+        if (localGameVesion != null && m_GameVersion.Patches != null && localGameVesion.Patches != null && m_GameVersion.Patches.Length > 0 && m_GameVersion.Patches[m_GameVersion.Patches.Length - 1].Version != localGameVesion.Patches[localGameVesion.Patches.Length - 1].Version)
             return true;
 
         return false;
@@ -392,9 +392,9 @@ public class HotPatchManager : Singleton<HotPatchManager>
     /// </summary>
     void GetHotAB()
     {
-        if (m_GameVersion != null && m_GameVersion.Pathces != null && m_GameVersion.Pathces.Length > 0)
+        if (m_GameVersion != null && m_GameVersion.Patches != null && m_GameVersion.Patches.Length > 0)
         {
-            Pathces lastPatches = m_GameVersion.Pathces[m_GameVersion.Pathces.Length - 1];
+            Patches lastPatches = m_GameVersion.Patches[m_GameVersion.Patches.Length - 1];
             if (lastPatches != null && lastPatches.Files != null)
             {
                 foreach (Patch patch in lastPatches.Files)
@@ -416,12 +416,12 @@ public class HotPatchManager : Singleton<HotPatchManager>
         m_DownLoadList.Clear();
         m_DownLoadDic.Clear();
         m_DownLoadMD5Dic.Clear();
-        AppStart._instance.HotConfirmDialog.AddShow("m_GameVersion.Pathces.Length" + m_GameVersion.Pathces.Length);
+        AppStart._instance.HotConfirmDialog.AddShow("m_GameVersion.Patches.Length" + m_GameVersion.Patches.Length);
 
-        if (m_GameVersion != null && m_GameVersion.Pathces != null && m_GameVersion.Pathces.Length > 0)
+        if (m_GameVersion != null && m_GameVersion.Patches != null && m_GameVersion.Patches.Length > 0)
         {
             //最后一个热更包
-            m_CurrentPatches = m_GameVersion.Pathces[m_GameVersion.Pathces.Length - 1];
+            m_CurrentPatches = m_GameVersion.Patches[m_GameVersion.Patches.Length - 1];
             
             if (m_CurrentPatches.Files != null && m_CurrentPatches.Files.Count > 0)
             {

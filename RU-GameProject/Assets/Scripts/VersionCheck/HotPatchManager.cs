@@ -22,7 +22,7 @@ namespace RU.Core.VersionCheck
         private ServerInfo m_serverInfo;
         private ServerInfo m_localInfo;
         private VersionInfo m_gameVersion;
-        private Pathces m_currentPatches;
+        private Patches m_currentPatches;
 
         /// <summary>
         /// All hot fix patches dic
@@ -84,7 +84,7 @@ namespace RU.Core.VersionCheck
         }
 
         //当前热更Patches    
-        public Pathces CurrentPatches
+        public Patches CurrentPatches
         {
             get { return m_currentPatches; }
         }
@@ -189,8 +189,7 @@ namespace RU.Core.VersionCheck
             LoadFileCount = m_downLoadList.Count;
             LoadSumSize = m_downLoadList.Sum<Patch>((Func<Patch, float>)(x => x.Size));
             m_targetVersionCheckProgress = 1f;
-            if (versionCheckConfirmHandler != null)
-                versionCheckConfirmHandler(m_downLoadList.Count > 0);
+            versionCheckConfirmHandler?.Invoke(m_downLoadList.Count > 0);            
         }
 
         /// <summary>
@@ -202,7 +201,7 @@ namespace RU.Core.VersionCheck
             if (!File.Exists(m_localXmlPath))
                 return true;
             m_localInfo = BinarySerializeOpt.XmlDeserialize(m_localXmlPath, typeof(ServerInfo)) as ServerInfo;
-            VersionInfo versionInfo1 = (VersionInfo)null;
+            VersionInfo versionInfo1 = null;
             if (m_localInfo != null)
             {
                 foreach (VersionInfo versionInfo2 in m_localInfo.GameVersion)
@@ -214,7 +213,7 @@ namespace RU.Core.VersionCheck
                     }
                 }
             }
-            return versionInfo1 != null && m_gameVersion.Pathces != null && (versionInfo1.Pathces != null && m_gameVersion.Pathces.Length != 0) && m_gameVersion.Pathces[m_gameVersion.Pathces.Length - 1].Version != versionInfo1.Pathces[versionInfo1.Pathces.Length - 1].Version;
+            return versionInfo1 != null && m_gameVersion.Patches != null && (versionInfo1.Patches != null && m_gameVersion.Patches.Length != 0) && m_gameVersion.Patches[m_gameVersion.Patches.Length - 1].Version != versionInfo1.Patches[versionInfo1.Patches.Length - 1].Version;
         }
 
         /// <summary>
@@ -222,10 +221,10 @@ namespace RU.Core.VersionCheck
         /// </summary>
         private void ReadVersion()
         {
-            TextAsset textAsset = (TextAsset)Resources.Load<TextAsset>("Version");
+            TextAsset textAsset = Resources.Load<TextAsset>("Version");
             if (textAsset == null)
             {
-                Debug.LogError((object)"未读到本地版本！");
+                Debug.LogError("未读到本地版本！");
             }
             else
             {
@@ -318,12 +317,12 @@ namespace RU.Core.VersionCheck
         /// </summary>
         private void GetHotAB()
         {
-            if (m_gameVersion == null || m_gameVersion.Pathces == null || m_gameVersion.Pathces.Length <= 0U)
+            if (m_gameVersion == null || m_gameVersion.Patches == null || m_gameVersion.Patches.Length <= 0U)
                 return;
-            Pathces pathce = m_gameVersion.Pathces[m_gameVersion.Pathces.Length - 1];
-            if (pathce != null && pathce.Files != null)
+            Patches patche = m_gameVersion.Patches[m_gameVersion.Patches.Length - 1];
+            if (patche != null && patche.Files != null)
             {
-                foreach (Patch file in pathce.Files)
+                foreach (Patch file in patche.Files)
                     m_hotFixDic.Add(file.Name, file);
             }
         }
@@ -338,9 +337,9 @@ namespace RU.Core.VersionCheck
             m_downLoadDic.Clear();
             m_downLoadMD5Dic.Clear();
             m_versionCheckProgress = 0.0f;
-            if (m_gameVersion != null && m_gameVersion.Pathces != null && m_gameVersion.Pathces.Length > 0U)
+            if (m_gameVersion != null && m_gameVersion.Patches != null && m_gameVersion.Patches.Length > 0U)
             {
-                m_currentPatches = m_gameVersion.Pathces[m_gameVersion.Pathces.Length - 1];
+                m_currentPatches = m_gameVersion.Patches[m_gameVersion.Patches.Length - 1];
                 int fileCount = m_currentPatches.Files.Count;
                 float delta = 1f / fileCount;
                 m_zipMd5Data = new ZipMd5Data();
