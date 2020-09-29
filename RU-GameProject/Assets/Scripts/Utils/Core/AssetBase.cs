@@ -6,6 +6,10 @@ using System.Xml.Serialization;
 
 namespace RU.Core.Utils.Core
 {
+    // TODO：改为JSON
+    /// <summary>
+    /// 更新文件中ServerInfo中每个Patch的基本信息
+    /// </summary>
     [Serializable]
     public class AssetBase
     {

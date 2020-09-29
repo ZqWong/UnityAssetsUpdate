@@ -10,6 +10,11 @@ using System.Xml.Serialization;
 
 namespace RU.Core.Utils.Core
 {
+  
+  // TODO：改为JSON
+  /// <summary>
+  /// AssetBase中的所有文件信息
+  /// </summary>
   [Serializable]
   public class AssetsMd5
   {

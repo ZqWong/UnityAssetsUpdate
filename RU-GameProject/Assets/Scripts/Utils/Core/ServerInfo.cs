@@ -6,6 +6,10 @@ using System.Xml.Serialization;
 namespace RU.Core.Utils.Core
 {
 
+    //TODO：改为json
+    /// <summary>
+    /// ServerInfo.xml反序列化
+    /// </summary>
     [System.Serializable]
     public class ServerInfo
     {

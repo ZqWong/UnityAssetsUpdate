@@ -9,6 +9,10 @@ using System.Xml.Serialization;
 
 namespace RU.Core.Utils.Core
 {
+  //TODO：改为json
+  /// <summary>
+  /// Zip包基本信息
+  /// </summary>
   [Serializable]
   public class ZipBase
   {
