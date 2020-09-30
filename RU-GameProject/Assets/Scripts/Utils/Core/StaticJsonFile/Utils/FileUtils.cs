@@ -117,9 +117,27 @@ namespace RU.Scripts.Utils.Core.StaticJsonFile.Utils
             return builder.ToString();
         }
 
-        public static T DecryptJSONDataFromFile<T>(string filePath) where T : class
+        public static T ReadJSONDataFromFile<T>(string filePath) where T : class
         {
             T data = null;
+            if (System.IO.File.Exists(filePath))
+            {
+                try
+                {
+                    string jsonText = System.IO.File.ReadAllText(filePath);
+                    data = LitJson.JsonMapper.ToObject<T>(jsonText);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError("Failed reading user data from: " + filePath + "\nerror: " + ex.ToString());
+                }
+            }
+            return data;
+        }
+
+        public static T DecryptJSONDataFromFile<T>(string filePath) where T : class
+        {
+            T data = null; 
             if (System.IO.File.Exists(filePath))
             {
                 try
@@ -135,6 +153,25 @@ namespace RU.Scripts.Utils.Core.StaticJsonFile.Utils
                 }
             }
             return data;
+        }
+
+        public static void WriteJSONDataInFile<T>(T data, string filePath)
+        {
+            try
+            {
+                string userDataText = LitJson.JsonMapper.ToJson(data);
+#if DEVELOPMENT
+			string ext = Path.GetExtension(filePath);
+			string debugPath = filePath.Substring(0, filePath.Length - ext.Length) + ".clear" + ext;
+			File.WriteAllText(debugPath, userDataText);
+#endif
+                FileUtils.DeleteFileIfExists(filePath);
+                File.WriteAllText(filePath, userDataText);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("Failed writing user data to: " + filePath + "\nerror: " + ex.ToString());
+            }
         }
 
         public static void EncryptJSONDataInFile<T>(T data, string filePath)
@@ -198,6 +235,7 @@ namespace RU.Scripts.Utils.Core.StaticJsonFile.Utils
         {
             if (File.Exists(filePath))
             {
+                Debug.Log("Delete Exist File :" + filePath);
                 File.Delete(filePath);
             }
         }
