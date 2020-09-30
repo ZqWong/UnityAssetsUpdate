@@ -1,0 +1,31 @@
+[
+	{
+		"GameVersion" : "1.0",
+		"Patches" :
+		[
+			{
+				"Version" : "1",
+				"Des" : "测试",
+				"Packages":
+				[
+					{
+						"Name" : "UnpackMd5_1.0_1.xml",
+						"Url" : "http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ/PC/1.0/1/UnpackMd5_1.0_1.xml",
+						"Platform" : "PC",
+						"Md5" : "9dc3586998649ce62b94cd6b03871fb1",
+						"Size" : "0.5410156",
+						"RelativePath" : ""
+					},
+					{
+						"Name" : "PC_TEST.zip",
+						"Url" : "http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ/PC/1.0/1/PC_TEST.zip",
+						"Platform" : "PC",
+						"Md5" : "8d893f78611f6ed5f33cf3f12532fe1a",
+						"Size" : "0.40234375",
+						"RelativePath" : ""
+					}
+				]
+			}
+		]
+	}
+]
