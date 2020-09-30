@@ -23,14 +23,10 @@ public class VersionUpdateManager : MonoBehaviour
 
     public void Start()
     {
+        StaticJsonManager.Instance.Initialize();
         Initialize(() => { Debug.LogError("Download complete"); });
         //  Initialize(() => { Debug.LogError("Download complete"); });
-        StaticJsonManager.Instance.Initialize();
         Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.Version);
-        Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName);
-        StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName = "111111";
-        StaticJsonManager.Instance.VersionInfo.Deinitialize();
-        StaticJsonManager.Instance.Initialize();
         Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName);
     }
 
