@@ -7,6 +7,7 @@ using RU.Core.Download;
 using RU.Core.Utils.Core;
 using UnityEngine;
 using UnityEngine.Networking;
+using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
 
 namespace RU.Core.VersionCheck
 {
@@ -221,23 +222,27 @@ namespace RU.Core.VersionCheck
         /// </summary>
         private void ReadVersion()
         {
-            TextAsset textAsset = Resources.Load<TextAsset>("Version");
-            if (textAsset == null)
-            {
-                Debug.LogError("未读到本地版本！");
-            }
-            else
-            {
-                string[] strArray1 = textAsset.text.Split('\n');
-                if (strArray1.Length <= 0U)
-                    return;
-                string[] strArray2 = strArray1[0].Split(';');
-                if (strArray2.Length >= 2)
-                {
-                    m_curVersion = strArray2[0].Split('|')[1];
-                    m_curPackName = strArray2[1].Split('|')[1];
-                }
-            }
+            // 从本地文件获取打包信息
+            m_curVersion = StaticJsonManager.Instance.VersionInfo.VersionInfo.Version;
+            m_curPackName = StaticJsonManager.Instance.VersionInfo.VersionInfo.Version;
+            
+            // TextAsset textAsset = Resources.Load<TextAsset>("Version");
+            // if (textAsset == null)
+            // {
+            //     Debug.LogError("未读到本地版本！");
+            // }
+            // else
+            // {
+            //     string[] strArray1 = textAsset.text.Split('\n');
+            //     if (strArray1.Length <= 0U)
+            //         return;
+            //     string[] strArray2 = strArray1[0].Split(';');
+            //     if (strArray2.Length >= 2)
+            //     {
+            //         m_curVersion = strArray2[0].Split('|')[1];
+            //         m_curPackName = strArray2[1].Split('|')[1];
+            //     }
+            // }
         }
 
         /// <summary>

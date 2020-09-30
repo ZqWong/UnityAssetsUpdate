@@ -3,6 +3,8 @@ using System.Collections;
 using RU.Core.VersionCheck;
 using UnityEngine;
 using UnityEngine.UI;
+using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
+using UnityEditor;
 
 public class VersionUpdateManager : MonoBehaviour
 {
@@ -22,6 +24,14 @@ public class VersionUpdateManager : MonoBehaviour
     public void Start()
     {
         Initialize(() => { Debug.LogError("Download complete"); });
+        //  Initialize(() => { Debug.LogError("Download complete"); });
+        StaticJsonManager.Instance.Initialize();
+        Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.Version);
+        Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName);
+        StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName = "111111";
+        StaticJsonManager.Instance.VersionInfo.Deinitialize();
+        StaticJsonManager.Instance.Initialize();
+        Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName);
     }
 
     //private Slider m_ProgressSlider;
