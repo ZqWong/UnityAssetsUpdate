@@ -8,6 +8,10 @@ using RU.Core.Utils.Core;
 using UnityEngine;
 using UnityEngine.Networking;
 using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
+using Assets.Scripts.VersionCheck.ServerInfoDataModule;
+using LitJson;
+using RU.Scripts.Utils.Core.StaticJsonFile.Utils;
+using Patch = RU.Core.Utils.Core.Patch;
 
 namespace RU.Core.VersionCheck
 {
@@ -19,8 +23,10 @@ namespace RU.Core.VersionCheck
         private string m_curVersion;
         private string m_curPackName;
         private string m_serverXmlPath = Application.persistentDataPath + "/ServerInfo.xml";
+        private string m_serverJsonPath = Application.persistentDataPath + "/ServerInfo.json";
         private string m_localXmlPath = Application.persistentDataPath + "/LocalInfo.xml";
         private ServerInfo m_serverInfo;
+        private ServerInfoDataModule serverInfoDataModule;
         private ServerInfo m_localInfo;
         private VersionInfo m_gameVersion;
         private Patches m_currentPatches;
@@ -145,6 +151,10 @@ namespace RU.Core.VersionCheck
             // Get current version & pack name
             ReadVersion();
             ChangeProgressSlider("正在获取版本信息", 0.5f);
+
+            yield return ReadServerInfoJson(
+                @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/PC/ServerInfo.json", null);
+
             yield return ReadServerInfoXml(xmlUrl, () =>
             {
                 Debug.Log("ReadServerInfoXml Over");
@@ -268,6 +278,44 @@ namespace RU.Core.VersionCheck
             }
             yield return WaitProgressAdd(0.02f);
             callBack?.Invoke();            
+        }
+
+        /// <summary>
+        /// 从服务器端读取Server.json数据
+        /// </summary>
+        /// <param name="jsonUrl"></param>
+        /// <param name="callBack"></param>
+        /// <returns></returns>
+        private IEnumerator ReadServerInfoJson(string jsonUrl, Action callBack)
+        {
+            Debug.Log("ReadServerInfoJson :" + jsonUrl);
+            UnityWebRequest webRequest = UnityWebRequest.Get(jsonUrl);
+            yield return webRequest.SendWebRequest();
+            if (webRequest.isNetworkError)
+            {
+                Debug.Log("Download Error :" + webRequest.error);
+            }
+            else
+            {
+                yield return FileUtil.Instance.CreateFile(m_serverJsonPath, webRequest.downloadHandler.data, null);
+                yield return new WaitForEndOfFrame();
+                if (File.Exists(m_serverJsonPath))
+                {
+                    StreamReader sr = new StreamReader(m_serverJsonPath);
+                    var content = sr.ReadToEnd();
+                    serverInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
+                    sr.Close();
+                    Debug.LogError("serverInfoDataModule :" + serverInfoDataModule.GameVersionInfos[0].GameVersion);
+                    Debug.LogError("serverInfoDataModule :" + serverInfoDataModule.GameVersionInfos[0].PatchInfos[0].Version);
+                }
+                else
+                {
+                    Debug.LogError("热更配置读取错误！");
+                }
+            }
+
+            yield return WaitProgressAdd(0.02f);
+            callBack?.Invoke();
         }
 
         private IEnumerator ReadUnpackMd5Xml(string xmlUrl, string downloadFilePath)
