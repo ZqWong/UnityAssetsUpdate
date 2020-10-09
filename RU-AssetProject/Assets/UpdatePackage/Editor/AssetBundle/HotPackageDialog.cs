@@ -26,7 +26,7 @@ public class HotPackageDialog : EditorWindow
             m_openFileName.maxFile = m_openFileName.file.Length;
             m_openFileName.fileTitle = new string(new char[64]);
             m_openFileName.maxFileTitle = m_openFileName.fileTitle.Length;
-            m_openFileName.initialDir = (Application.dataPath + "/../Version").Replace("/", "\\");
+            m_openFileName.initialDir = (Application.dataPath + "/Resources").Replace("/", "\\");
             m_openFileName.title = "Select MD5 Dialog";
             m_openFileName.flags = 0x00080000 | 0x00001000 | 0x00000800 | 0x00000008;
             if (LocalDialog.GetSaveFileName(m_openFileName))

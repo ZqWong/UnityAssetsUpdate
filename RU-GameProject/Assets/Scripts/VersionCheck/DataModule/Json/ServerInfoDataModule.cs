@@ -81,12 +81,12 @@ namespace Esp.VersionCheck.DataModule.Json
     {
         public Patch() { }
 
-        public string Name;
-        public string Url;
-        public string Platform;
-        public string Md5;
-        public string Size;
-        public string RelativePath;
+        public string Name = string.Empty;
+        public string Url = string.Empty;
+        public string Platform = string.Empty;
+        public string Md5 = string.Empty;
+        public string Size = string.Empty;
+        public string RelativePath = string.Empty;
 
         public Patch(JsonData data)
         {

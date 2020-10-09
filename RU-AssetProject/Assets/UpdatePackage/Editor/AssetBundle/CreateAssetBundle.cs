@@ -523,12 +523,13 @@ public class CreateAssetBundle : MonoBehaviour
             }
         }
 
-        string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.xml";
+
 
 #if XML
-
+        string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.xml";
         BinarySerializeOpt.Xmlserialize(patchPath, patches);
 #elif JSON
+        string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.json";
         string jsonData = JsonMapper.ToJson(patches);
         File.WriteAllText(patchPath, jsonData, Encoding.UTF8);
 #endif
