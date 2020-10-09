@@ -10,6 +10,10 @@ namespace Esp.VersionCheck.DataModule.Json
     [Serializable]
     public class ServerInfoDataModule
     {
+        public ServerInfoDataModule()
+        {
+            GameVersionInfos = new List<GameVersionInfo>();
+        }
 
         public List<GameVersionInfo> GameVersionInfos;
 
@@ -26,6 +30,11 @@ namespace Esp.VersionCheck.DataModule.Json
     [Serializable]
     public class GameVersionInfo
     {
+        public GameVersionInfo()
+        {
+            PatchInfos = new List<Patches>();
+        }
+
         public string GameVersion;
         public List<Patches> PatchInfos;
 
@@ -44,6 +53,11 @@ namespace Esp.VersionCheck.DataModule.Json
     [Serializable]
     public class Patches
     {
+        public Patches()
+        {
+            Files = new List<Patch>();
+        }
+
         public string Version;
         public string Des;
         public List<Patch> Files;
@@ -65,6 +79,8 @@ namespace Esp.VersionCheck.DataModule.Json
     [Serializable]
     public class Patch
     {
+        public Patch() { }
+
         public string Name;
         public string Url;
         public string Platform;

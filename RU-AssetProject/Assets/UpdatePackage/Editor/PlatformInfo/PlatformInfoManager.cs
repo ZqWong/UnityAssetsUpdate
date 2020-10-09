@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlatformInfoManager : MonoBehaviour
 {
-    public const string TARGET_PLATFORM_CONFIG_PATH = "Assets/Resources/PlatformConfig/PlatformConfig.asset";
+    public const string TARGET_PLATFORM_CONFIG_PATH = "Assets/Resources/PlatformConfig.asset";
 
     /// <summary>
     /// Get current platform path by asset
@@ -14,6 +14,7 @@ public class PlatformInfoManager : MonoBehaviour
     public static string GetCurrentPlatformPath()
     {
         TargetPlatform targetPlatformConfig = AssetDatabase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
+        Debug.Assert(null != targetPlatformConfig, "Get platform config failed, Please make sure already created the \"PlatformConfig.asset\" file in the Resources Folder!");
         return targetPlatformConfig.GetCurrentPlatformPath();
     }
 

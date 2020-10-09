@@ -9,8 +9,14 @@ namespace Esp.VersionCheck.DataModule.Json
 {
 	[Serializable]
 	public class UnpackMd5InfoDataModule
-	{
-		public List<ZipMd5> ZipMd5List;
+    {
+        public UnpackMd5InfoDataModule()
+        {
+            ZipMd5List = new List<ZipMd5>();
+        }
+
+
+        public List<ZipMd5> ZipMd5List;
 
 		public UnpackMd5InfoDataModule(JsonData data)
 		{
@@ -25,7 +31,12 @@ namespace Esp.VersionCheck.DataModule.Json
 	[Serializable]
 	public class ZipMd5
 	{
-		public string ZipName;
+        public ZipMd5()
+        {
+            FileList = new List<ZipBase>();
+        }
+
+        public string ZipName;
 		public List<ZipBase> FileList;
 
 		public ZipMd5(JsonData data)
@@ -44,6 +55,8 @@ namespace Esp.VersionCheck.DataModule.Json
     [Serializable]
     public class ZipBase
 	{
+        public ZipBase() { }
+
         public string Name;
         public string Md5;
         public string PackageName;

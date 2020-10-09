@@ -1,8 +1,27 @@
+#define JSON
+
 using System.Collections.Generic;
 using UnityEditor;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using Esp.Core.Utils.Core;
+using Esp.VersionCheck.DataModule.Json;
+using Esp.VersionCheck.DataModule.Xml;
 using UnityEngine;
+
+#if JSON
+using LitJson;
+using ZipMd5 = Esp.VersionCheck.DataModule.Json.ZipMd5;
+using ZipBase = Esp.VersionCheck.DataModule.Json.ZipBase;
+using Patches = Esp.VersionCheck.DataModule.Json.Patches;
+using Patch = Esp.VersionCheck.DataModule.Json.Patch;
+#elif XML
+using Patch = Esp.VersionCheck.DataModule.Xml.Patch;
+using Patches = Esp.VersionCheck.DataModule.Xml.Patches;
+#endif
+
+
 
 public class CreateAssetBundle : MonoBehaviour
 {
@@ -134,7 +153,7 @@ public class CreateAssetBundle : MonoBehaviour
 
     #region Create a standard asset bundle.
 
-    [MenuItem("Tools/AssetBundle/Create Standard AssetBundle")]
+    [MenuItem("Tools/AssetBundle/Create Standard AssetBundle (Do this step first!)")]
     static void StartBuildStandardPipeline()
     {
         Debug.Log("StartBuildStandardPipeline");
@@ -163,6 +182,10 @@ public class CreateAssetBundle : MonoBehaviour
     #endregion
 
     #region MD5 Parsing
+
+    /// <summary>
+    /// 将准备打包的包进行统计获取MD5,并写入到AssetsMD5.bytes文件中
+    /// </summary>
     public static void WriteABMD5()
     {
         if (!Directory.Exists(ASSET_BUNDLE_FILE_SAVE_LOCATION))
@@ -202,6 +225,12 @@ public class CreateAssetBundle : MonoBehaviour
         Debug.Log("<color=yellow>" + "WriteAssetsMd5 : " + targetPath + "</color>");
     }
 
+    /// <summary>
+    /// 开始生成热更新包流程
+    /// </summary>
+    /// <param name="abmd5Path">本地AssetsMD5.bytes文件路径</param>
+    /// <param name="hotCount">小版本号</param>
+    /// <param name="des">版本描述</param>
     public static void ReadMd5Com(string abmd5Path, string hotCount, string des)
     {
         m_PackedMd5.Clear();
@@ -231,6 +260,7 @@ public class CreateAssetBundle : MonoBehaviour
 
                 if (!m_PackedMd5.ContainsKey(name))
                 {
+                    // 获取新增更新的文件
                     string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
                     changeList.Add(new FileInfoExtend(files[i], RelativePath));
                     Debug.Log("<color=yellow>" + "发现新增热更文件 ： " + name + "</color>");
@@ -240,6 +270,7 @@ public class CreateAssetBundle : MonoBehaviour
                     //以前的文件对比MD5是否相同
                     if (m_PackedMd5.TryGetValue(name, out assetBase))
                     {
+                        // 获取需要有修改的文件
                         if (md5 != assetBase.Md5)
                         {
                             string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
@@ -261,9 +292,48 @@ public class CreateAssetBundle : MonoBehaviour
         Debug.Log("检查内部文件MD5");
         DirectoryInfo directoryInfo = new DirectoryInfo(EXTRACT_ZIP_CACHE_PATH);
         DirectoryInfo[] diA = directoryInfo.GetDirectories();//获得了所有一级子目录
+
+#if JSON
+        UnpackMd5InfoDataModule unpackMd5InfoDataModule = new UnpackMd5InfoDataModule();
+
+        for (int i = 0; i < diA.Length; i++)
+        {
+            EditorUtility.DisplayProgressBar("解压至缓存", "正在解压" + diA[i].Name + "... ...", 1.0f / diA.Length * i);
+            ZipMd5 zipMd5 = new ZipMd5();
+            zipMd5.ZipName = diA[i].Name;
+            FileInfo[] files = diA[i].GetFiles("*", SearchOption.AllDirectories);
+
+            for (int j = 0; j < files.Length; j++)
+            {
+                if (!files[j].Name.EndsWith(".meta"))
+                {
+                    ZipBase zipBase = new ZipBase();
+                    zipBase.Name = files[j].Name;
+                    zipBase.Md5 = MD5Manager.Instance.BuildFileMd5(files[j].FullName);
+                    //Debug.Log(diA[i].Name);
+                    zipBase.PackageName = diA[i].Name;
+                    zipBase.UnpackPath = GetFileRelativePath(files[j].FullName, diA[i].Name);
+                    zipMd5.FileList.Add(zipBase);
+                }
+            }
+            unpackMd5InfoDataModule.ZipMd5List.Add(zipMd5);
+        }
+
+        string unPackCachepath = EXTRACT_ZIP_CACHE_PATH + "/UnpackMd5_" + PlayerSettings.bundleVersion + "_" + hotCount + ".json";
+        string jsonData = JsonMapper.ToJson(unpackMd5InfoDataModule);
+
+        File.WriteAllText(unPackCachepath, jsonData, Encoding.UTF8);
+
+        bundleUnPackMd5Path = ASSET_BUNDLE_FILE_SAVE_LOCATION + "/UnpackMd5_" + PlayerSettings.bundleVersion + "_" + hotCount + ".json";
+        if (File.Exists(bundleUnPackMd5Path))
+        {
+            File.Delete(bundleUnPackMd5Path);
+        }
+
+#elif XML
+
         ZipMd5Data data = new ZipMd5Data();
         data.ZipMd5List = new List<ZipMd5>();
-
 
         for (int i = 0; i < diA.Length; i++)
         {
@@ -298,6 +368,8 @@ public class CreateAssetBundle : MonoBehaviour
         {
             File.Delete(bundleUnPackMd5Path);
         }
+#endif
+
         File.Copy(unPackCachepath, bundleUnPackMd5Path);
 
         Debug.Log("<color=yellow>" + "Zip内部文件MD5写入 : " + bundleUnPackMd5Path + "</color>");
@@ -356,11 +428,18 @@ public class CreateAssetBundle : MonoBehaviour
         }
         
         Clear_Directors(HOT_OUT_PATH);
+
+#if XML
         Patches patches = new Patches();
         patches.Version = int.Parse(hotCount);
         patches.Des = des;
         patches.Files = new List<Patch>();
 
+#elif JSON
+        Patches patches = new Patches();
+        patches.Version = hotCount;
+        patches.Des = des;
+#endif
         ////unpack.bytes////
         FileInfo unpackFileInfo = new FileInfo(bundleUnPackMd5Path);
         string RelativePath = GetDirRelativePath(unpackFileInfo.DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
@@ -384,13 +463,20 @@ public class CreateAssetBundle : MonoBehaviour
         }
         File.Copy(sourceFileName: unpackFileInfoExtend.FileInfo.FullName, destFileName: dest);
 
+
+
         Patch unpackPatch = new Patch();
         unpackPatch.Md5 = MD5Manager.Instance.BuildFileMd5(dest);
         unpackPatch.Name = unpackFileInfoExtend.FileInfo.Name;
+#if XML
         unpackPatch.Size = unpackFileInfoExtend.FileInfo.Length / 1024.0f;
+#elif JSON
+        unpackPatch.Size = (unpackFileInfoExtend.FileInfo.Length / 1024.0f).ToString();
+#endif
         unpackPatch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
         unpackPatch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
         patches.Files.Add(unpackPatch);
+
         File.Delete(unpackFileInfoExtend.FileInfo.FullName);
         ///////////////////
 
@@ -424,18 +510,30 @@ public class CreateAssetBundle : MonoBehaviour
                 Patch patch = new Patch();
                 patch.Md5 = MD5Manager.Instance.BuildFileMd5(changeList[i].FileInfo.FullName);
                 patch.Name = changeList[i].FileInfo.Name;
+#if XML
                 patch.Size = changeList[i].FileInfo.Length / 1024.0f;
+#elif JSON
+                patch.Size = (changeList[i].FileInfo.Length / 1024.0f).ToString();
+#endif
                 patch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
                 patch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
                 patch.RelativePath = changeList[i].RelativePath;
                 patches.Files.Add(patch);
+
             }
         }
 
         string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.xml";
+
+#if XML
+
         BinarySerializeOpt.Xmlserialize(patchPath, patches);
+#elif JSON
+        string jsonData = JsonMapper.ToJson(patches);
+        File.WriteAllText(patchPath, jsonData, Encoding.UTF8);
+#endif
         EditorUtility.ClearProgressBar();
         Debug.Log("<color=yellow>"+"生成新的服务器配置表 ： " + patchPath + " </color>");
     }
-    #endregion
+#endregion
 }
