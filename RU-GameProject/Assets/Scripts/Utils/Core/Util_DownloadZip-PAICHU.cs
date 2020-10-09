@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using ICSharpCode.SharpZipLib.Zip;
 using UnityEngine;
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
     public class Util_DownloadZip : MonoBehaviour
     {

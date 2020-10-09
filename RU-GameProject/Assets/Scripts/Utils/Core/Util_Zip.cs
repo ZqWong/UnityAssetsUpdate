@@ -6,7 +6,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using System.IO;
 using UnityEngine;
 using System.Collections;
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
 	public static class Util_Zip
 	{

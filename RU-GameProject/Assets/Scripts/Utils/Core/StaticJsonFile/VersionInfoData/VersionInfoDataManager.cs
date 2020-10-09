@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
-using RU.Assets.Scripts.Utils.Core.StaticJsonFile.VersionInfoData.DataModule;
-using RU.Scripts.Utils.Core.StaticJsonFile.DataModule;
-using RU.Scripts.Utils.Core.StaticJsonFile.Utils;
+using Esp.Assets.Scripts.Utils.Core.StaticJsonFile;
+using Esp.Assets.Scripts.Utils.Core.StaticJsonFile.VersionInfoData.DataModule;
+using Esp.Scripts.Utils.Core.StaticJsonFile.DataModule;
+using Esp.Scripts.Utils.Core.StaticJsonFile.Utils;
 using UnityEngine;
 
-namespace RU.Scripts.Utils.Core.StaticJsonFile.VersionInfoData
+namespace Esp.Scripts.Utils.Core.StaticJsonFile.VersionInfoData
 {
     public class VersionInfoDataManager : JsonDataModule
     {

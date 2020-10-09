@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.IO;
 using System.Text;
 
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
 
     [Serializable]

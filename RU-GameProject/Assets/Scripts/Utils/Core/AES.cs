@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
     public class AES
     {

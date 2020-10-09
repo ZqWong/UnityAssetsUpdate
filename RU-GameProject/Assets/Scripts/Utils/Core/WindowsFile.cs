@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

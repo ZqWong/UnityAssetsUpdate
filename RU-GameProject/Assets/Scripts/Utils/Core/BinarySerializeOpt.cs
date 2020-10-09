@@ -11,7 +11,7 @@ using System.Text;
 using System.Xml.Serialization;
 using UnityEngine;
 
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
   public class BinarySerializeOpt
   {

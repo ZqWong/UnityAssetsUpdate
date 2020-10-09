@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
-using RU.Core.VersionCheck;
+using Esp.Core.VersionCheck;
 using UnityEngine;
 using UnityEngine.UI;
-using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
+using Esp.Assets.Scripts.Utils.Core.StaticJsonFile;
 using UnityEditor;
 
 public class VersionUpdateManager : MonoBehaviour
@@ -18,7 +18,7 @@ public class VersionUpdateManager : MonoBehaviour
     private string xmlURLFormat
     {
         //GameManager.Instance.VersionXmlURL 配置 http://172.16.16.4:8080/resourcemgr2/Download/StructurePrinciple
-        get { return @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/{0}/ServerInfo.xml"; }
+        get { return @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/{0}/ServerInfo.json"; }
     }
 
     public void Start()
@@ -96,8 +96,8 @@ public class VersionUpdateManager : MonoBehaviour
             head = Application.streamingAssetsPath+ "/AssetBundles/PC";
             m_UnPackPath = head;
             m_DownLoadPath = head;
-            m_ServerXmlPath = head + "/ServerInfo.xml";
-            m_LocalXmlPath = head + "/LocalInfo.xml";
+            m_ServerXmlPath = head + "/ServerInfo.json";
+            m_LocalXmlPath = head + "/LocalInfo.json";
             xmlURL = String.Format(xmlURLFormat, "PC");
         }
         else if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.WindowsEditor)

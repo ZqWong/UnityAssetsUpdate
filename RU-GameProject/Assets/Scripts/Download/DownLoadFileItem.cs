@@ -1,11 +1,20 @@
+#define JSON
+
 using System;
 using System.Collections;
 using System.IO;
-using RU.Core.Utils.Core;
+using Esp.Core.Utils.Core;
+
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace RU.Core.Download
+#if JSON
+using Esp.VersionCheck.DataModule.Json;
+#elif XML
+using Esp.VersionCheck.DataModule.Xml;
+#endif
+
+namespace Esp.Core.Download
 {
     public class DownLoadFileItem : DownLoadItemBase
     {
@@ -67,7 +76,7 @@ namespace RU.Core.Download
         /// Get file size (M) useless!
         /// </summary>
         /// <returns></returns>
-        public float Size() => m_patch.Size / 1024f;
+        public float Size() => float.Parse(m_patch.Size) / 1024f;
 
         /// <summary>
         /// Initialize download task

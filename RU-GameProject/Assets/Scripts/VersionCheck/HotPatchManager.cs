@@ -1,41 +1,73 @@
+// 开启重构模式
+#if REBUILD
+ #define JSON //XML JSON
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using RU.Core.Download;
-using RU.Core.Utils.Core;
+using Esp.Core.Download;
+using Esp.Core.Utils.Core;
+
 using UnityEngine;
 using UnityEngine.Networking;
-using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
-using Assets.Scripts.VersionCheck.ServerInfoDataModule;
+#if JSON
 using LitJson;
-using RU.Scripts.Utils.Core.StaticJsonFile.Utils;
-using Patch = RU.Core.Utils.Core.Patch;
+using Esp.Assets.Scripts.Utils.Core.StaticJsonFile;
+using Esp.VersionCheck.DataModule.Json;
 
-namespace RU.Core.VersionCheck
+#elif XML
+using Esp.VersionCheck.DataModule.Xml;
+
+#endif
+
+namespace Esp.Core.VersionCheck
 {
     public class HotPatchManager : Singleton<HotPatchManager>
     {
         private MonoBehaviour m_mono;
         private string m_unPackPath = Application.persistentDataPath + "/Origin";
         private string m_downLoadPath = Application.persistentDataPath + "/DownLoad";
+        
         private string m_curVersion;
         private string m_curPackName;
-        private string m_serverXmlPath = Application.persistentDataPath + "/ServerInfo.xml";
+
+#if JSON
         private string m_serverJsonPath = Application.persistentDataPath + "/ServerInfo.json";
+        private string m_localJsonPath = Application.persistentDataPath + "/LocalInfo.json";
+        
+        private ServerInfoDataModule m_serverInfoDataModule;
+        private ServerInfoDataModule m_localInfoDataModule;
+        private GameVersionInfo m_currentGameVersionInfo;
+        private Patches m_currentPatches;
+
+        /// <summary>
+        /// 当前版本所有需要下载的文件列表
+        /// </summary>
+        private Dictionary<string, Patch> m_hmrDic = new Dictionary<string, Patch>();
+
+        private List<Patch> m_downLoadList = new List<Patch>();
+
+        private Dictionary<string, Patch> m_downLoadDic = new Dictionary<string, Patch>();
+
+        private UnpackMd5InfoDataModule m_zipMd5Data;
+
+#elif XML
+        private string m_serverXmlPath = Application.persistentDataPath + "/ServerInfo.xml";
         private string m_localXmlPath = Application.persistentDataPath + "/LocalInfo.xml";
+
         private ServerInfo m_serverInfo;
-        private ServerInfoDataModule serverInfoDataModule;
         private ServerInfo m_localInfo;
         private VersionInfo m_gameVersion;
         private Patches m_currentPatches;
 
         /// <summary>
-        /// All hot fix patches dic
+        /// 当前版本所有需要下载的文件列表
         /// </summary>
-        private Dictionary<string, Patch> m_hotFixDic = new Dictionary<string, Patch>();       
-         
+        private Dictionary<string, Patch> m_hotFixDic = new Dictionary<string, Patch>();
+
         /// <summary>
         /// Need download patches
         /// </summary>
@@ -45,6 +77,10 @@ namespace RU.Core.VersionCheck
         /// Need download patch dic
         /// </summary>
         private Dictionary<string, Patch> m_downLoadDic = new Dictionary<string, Patch>();
+
+        private ZipMd5Data m_zipMd5Data;
+#endif
+
 
         /// <summary>
         /// All download file name and its MD5 value dic
@@ -61,8 +97,6 @@ namespace RU.Core.VersionCheck
         /// Downloading file
         /// </summary>
         private DownLoadFileItem m_curDownload = null;
-        
-        private ZipMd5Data m_zipMd5Data;
 
         private float m_versionCheckProgress = 0.0f;
         private float m_targetVersionCheckProgress = 0.0f;
@@ -123,39 +157,74 @@ namespace RU.Core.VersionCheck
           Action<bool> versionCheckConfirmHandler,
           string unPackPath = "",
           string downLoadPath = "",
-          string serverXmlPath = "",
-          string localXmlPath = "",
+          string serverInfoPath = "",
+          string localInfoPath = "",
           Action<string, float> progressSliderChangeHandler = null,
           Action<string> itemErrorHandler = null)
         {
             m_mono = mono;
             m_unPackPath = !string.IsNullOrEmpty(unPackPath) ? unPackPath : Application.persistentDataPath + "/Origin";
             m_downLoadPath = !string.IsNullOrEmpty(downLoadPath) ? downLoadPath : Application.persistentDataPath + "/DownLoad";
-            m_serverXmlPath = !string.IsNullOrEmpty(serverXmlPath) ? serverXmlPath : Application.persistentDataPath + "/ServerInfo.xml";
-            m_localXmlPath = !string.IsNullOrEmpty(localXmlPath) ? localXmlPath : Application.persistentDataPath + "/LocalInfo.xml";
+
+#if XML
+            m_serverXmlPath = !string.IsNullOrEmpty(serverInfoPath) ? serverInfoPath : Application.persistentDataPath + "/ServerInfo.xml";
+            m_localXmlPath = !string.IsNullOrEmpty(localInfoPath) ? localInfoPath : Application.persistentDataPath + "/LocalInfo.xml";
+#elif JSON
+            m_serverJsonPath = !string.IsNullOrEmpty(serverInfoPath) ? serverInfoPath : Application.persistentDataPath + "/ServerInfo.json";
+            m_localJsonPath = !string.IsNullOrEmpty(localInfoPath) ? localInfoPath : Application.persistentDataPath + "/LocalInfo.json";
+#endif
+
             OnProgressSliderChange = progressSliderChangeHandler;
             ItemError = itemErrorHandler;
             m_mono.StartCoroutine(CheckVersionCoroutine(serverInfoXmlUrl, versionCheckConfirmHandler));
         }
 
-        public IEnumerator CheckVersionCoroutine(string xmlUrl, Action<bool> versionCheckConfirmHandler = null)
+        public IEnumerator CheckVersionCoroutine(string serverInfoRemotePath, Action<bool> versionCheckConfirmHandler = null)
         {
             if (!Directory.Exists(Application.persistentDataPath))
                 Directory.CreateDirectory(Application.persistentDataPath);
             
-            Debug.Log("正在检查版本信息 " + xmlUrl);
+            Debug.Log("正在检查版本信息 " + serverInfoRemotePath);
             ChangeProgressSlider("正在获取版本信息", 0.0f);
             m_tryDownCount = 0;
+
+#if JSON
+            m_hmrDic.Clear();
+#elif XML
             m_hotFixDic.Clear();
+#endif
 
             // Get current version & pack name
             ReadVersion();
             ChangeProgressSlider("正在获取版本信息", 0.5f);
 
-            yield return ReadServerInfoJson(
-                @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/PC/ServerInfo.json", null);
+#if JSON 
+            // For test, Read the json file from remote server.
+            //yield return ReadServerInfoJson(
+            //    @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/PC/ServerInfo.json", null);
 
-            yield return ReadServerInfoXml(xmlUrl, () =>
+            yield return ReadServerInfoJson(serverInfoRemotePath, () =>
+            {
+                Debug.Log("<color=green>Read server info (json) from remote server complete!</color>");
+                if (null == m_serverInfoDataModule)
+                {
+                    Debug.LogError("Server parsing failed, null == m_serverInfoDataModule");
+                    if (null == ServerInfoError)
+                        return;
+                    ServerInfoError();
+                }
+                else
+                {
+                    var matchedVersionInfo = m_serverInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
+                    Debug.Assert(null == matchedVersionInfo, "Get matched server info failed");
+                    if (null != matchedVersionInfo)
+                        m_currentGameVersionInfo = matchedVersionInfo;
+                    GetHotAB();
+                }
+            });
+
+#elif XML
+            yield return ReadServerInfoXml(serverInfoRemotePath, () =>
             {
                 Debug.Log("ReadServerInfoXml Over");
                 if (m_serverInfo == null)
@@ -178,11 +247,15 @@ namespace RU.Core.VersionCheck
                     GetHotAB();
                 }
             });
+#endif
+
             ChangeProgressSlider("正在获取版本信息", 1f);
+
             if (CheckLocalAndServerPatch())
             {
-                Debug.Log((object)"需要更新，检查需要更新哪些文件");
-                yield return (object)ComputeDownload(true);
+                Debug.Log("需要更新，检查需要更新哪些文件");
+                yield return ComputeDownload(true);
+#if XML
                 if (File.Exists(m_serverXmlPath))
                 {
                     if (File.Exists(m_localXmlPath))
@@ -190,15 +263,25 @@ namespace RU.Core.VersionCheck
                     File.Move(m_serverXmlPath, m_localXmlPath);
                 }
                 else
-                    Debug.LogError((object)("Do not exists file : " + m_serverXmlPath));
+                    Debug.LogError(("Do not exists file : " + m_serverXmlPath));
+#elif JSON
+                if (File.Exists(m_serverJsonPath))
+                {
+                    if (File.Exists(m_localJsonPath))
+                        File.Delete(m_localJsonPath);
+                    File.Move(m_serverJsonPath, m_localJsonPath);
+                }
+                else
+                    Debug.LogError(("Do not exists file : " + m_serverJsonPath));
+#endif
             }
             else
             {
-                Debug.Log((object)"不需要更新，但是仍然要检查一下文件的完整性");
-                yield return (object)ComputeDownload(true);
+                Debug.Log("不需要更新，但是仍然要检查一下文件的完整性");
+                yield return ComputeDownload(true);
             }
             LoadFileCount = m_downLoadList.Count;
-            LoadSumSize = m_downLoadList.Sum<Patch>((Func<Patch, float>)(x => x.Size));
+            LoadSumSize = m_downLoadList.Sum(x => float.Parse(x.Size));
             m_targetVersionCheckProgress = 1f;
             versionCheckConfirmHandler?.Invoke(m_downLoadList.Count > 0);            
         }
@@ -209,6 +292,31 @@ namespace RU.Core.VersionCheck
         /// <returns></returns>
         private bool CheckLocalAndServerPatch()
         {
+#if JSON
+            if (!File.Exists(m_localJsonPath))
+                return true;
+
+            StreamReader sr = new StreamReader(m_localJsonPath);
+            var content = sr.ReadToEnd();
+            m_localInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
+            sr.Close();
+
+            GameVersionInfo matchInfo = null;
+
+            if (null != m_localInfoDataModule)
+            {
+                var info = m_localInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
+                if (null != info)
+	            {
+                    matchInfo = info;
+	            }                
+	        }
+
+            return null != matchInfo &&
+                   null != m_currentGameVersionInfo.PatchInfos &&
+                   (null != matchInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count != 0) &&
+                   m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1].Version != matchInfo.PatchInfos[matchInfo.PatchInfos.Count - 1].Version;
+#elif XML
             if (!File.Exists(m_localXmlPath))
                 return true;
             m_localInfo = BinarySerializeOpt.XmlDeserialize(m_localXmlPath, typeof(ServerInfo)) as ServerInfo;
@@ -224,7 +332,11 @@ namespace RU.Core.VersionCheck
                     }
                 }
             }
-            return versionInfo1 != null && m_gameVersion.Patches != null && (versionInfo1.Patches != null && m_gameVersion.Patches.Length != 0) && m_gameVersion.Patches[m_gameVersion.Patches.Length - 1].Version != versionInfo1.Patches[versionInfo1.Patches.Length - 1].Version;
+            return versionInfo1 != null &&
+                   m_gameVersion.Patches != null &&
+                   (versionInfo1.Patches != null && m_gameVersion.Patches.Length != 0) &&
+                   m_gameVersion.Patches[m_gameVersion.Patches.Length - 1].Version != versionInfo1.Patches[versionInfo1.Patches.Length - 1].Version;
+#endif
         }
 
         /// <summary>
@@ -232,32 +344,40 @@ namespace RU.Core.VersionCheck
         /// </summary>
         private void ReadVersion()
         {
+#if JSON
             // 从本地文件获取打包信息
             m_curVersion = StaticJsonManager.Instance.VersionInfo.VersionInfo.Version;
             m_curPackName = StaticJsonManager.Instance.VersionInfo.VersionInfo.Version;
-            
-            // TextAsset textAsset = Resources.Load<TextAsset>("Version");
-            // if (textAsset == null)
-            // {
-            //     Debug.LogError("未读到本地版本！");
-            // }
-            // else
-            // {
-            //     string[] strArray1 = textAsset.text.Split('\n');
-            //     if (strArray1.Length <= 0U)
-            //         return;
-            //     string[] strArray2 = strArray1[0].Split(';');
-            //     if (strArray2.Length >= 2)
-            //     {
-            //         m_curVersion = strArray2[0].Split('|')[1];
-            //         m_curPackName = strArray2[1].Split('|')[1];
-            //     }
-            // }
+
+#elif XML
+            TextAsset textAsset = Resources.Load<TextAsset>("Version");
+            if (textAsset == null)
+            {
+                Debug.LogError("未读到本地版本！");
+            }
+            else
+            {
+                string[] strArray1 = textAsset.text.Split('\n');
+                if (strArray1.Length <= 0U)
+                    return;
+                string[] strArray2 = strArray1[0].Split(';');
+                if (strArray2.Length >= 2)
+                {
+                    m_curVersion = strArray2[0].Split('|')[1];
+                    m_curPackName = strArray2[1].Split('|')[1];
+                }
+            }
+#endif
         }
 
+
+#if XML
         /// <summary>
-        /// Get version info from remote server
+        /// 从服务器端读取Server.xml数据
         /// </summary>
+        /// <param name="xmlUrl"></param>
+        /// <param name="callBack"></param>
+        /// <returns></returns>
         private IEnumerator ReadServerInfoXml(string xmlUrl, Action callBack)
         {
             Debug.Log("ReadServerInfoXml " + xmlUrl);
@@ -279,6 +399,10 @@ namespace RU.Core.VersionCheck
             yield return WaitProgressAdd(0.02f);
             callBack?.Invoke();            
         }
+
+#endif
+
+#if JSON
 
         /// <summary>
         /// 从服务器端读取Server.json数据
@@ -303,10 +427,10 @@ namespace RU.Core.VersionCheck
                 {
                     StreamReader sr = new StreamReader(m_serverJsonPath);
                     var content = sr.ReadToEnd();
-                    serverInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
+                    m_serverInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
                     sr.Close();
-                    Debug.LogError("serverInfoDataModule :" + serverInfoDataModule.GameVersionInfos[0].GameVersion);
-                    Debug.LogError("serverInfoDataModule :" + serverInfoDataModule.GameVersionInfos[0].PatchInfos[0].Version);
+                    Debug.LogError("serverInfoDataModule :" + m_serverInfoDataModule.GameVersionInfos[0].GameVersion);
+                    Debug.LogError("serverInfoDataModule :" + m_serverInfoDataModule.GameVersionInfos[0].PatchInfos[0].Version);
                 }
                 else
                 {
@@ -318,9 +442,11 @@ namespace RU.Core.VersionCheck
             callBack?.Invoke();
         }
 
-        private IEnumerator ReadUnpackMd5Xml(string xmlUrl, string downloadFilePath)
+#endif
+
+        private IEnumerator ReadUnpackMd5Inifo(string url, string localPath)
         {
-            UnityWebRequest webRequest = UnityWebRequest.Get(xmlUrl);
+            UnityWebRequest webRequest = UnityWebRequest.Get(url);
             yield return webRequest.SendWebRequest();
             if (webRequest.isNetworkError)
             {
@@ -328,7 +454,7 @@ namespace RU.Core.VersionCheck
             }
             else
             {
-                yield return FileUtil.Instance.CreateFile(downloadFilePath, webRequest.downloadHandler.data, null);
+                yield return FileUtil.Instance.CreateFile(localPath, webRequest.downloadHandler.data, null);
                 yield return new WaitForEndOfFrame();
             }
         }
@@ -370,6 +496,20 @@ namespace RU.Core.VersionCheck
         /// </summary>
         private void GetHotAB()
         {
+#if JSON
+            // Json
+            if (null == m_currentGameVersionInfo || null == m_currentGameVersionInfo.PatchInfos || m_currentGameVersionInfo.PatchInfos.Count <= 0)
+                return;
+            var patchInfo = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
+            if (null != patchInfo && null != patchInfo.Files)
+            {
+                foreach (var file in patchInfo.Files)
+                {
+                    m_hmrDic.Add(file.Name, file);
+                }
+            }
+#elif XML
+            // Xml
             if (m_gameVersion == null || m_gameVersion.Patches == null || m_gameVersion.Patches.Length <= 0U)
                 return;
             Patches patche = m_gameVersion.Patches[m_gameVersion.Patches.Length - 1];
@@ -378,6 +518,7 @@ namespace RU.Core.VersionCheck
                 foreach (Patch file in patche.Files)
                     m_hotFixDic.Add(file.Name, file);
             }
+#endif
         }
 
         /// <summary>
@@ -386,10 +527,14 @@ namespace RU.Core.VersionCheck
         private IEnumerator ComputeDownload(bool checkZip)
         {
             Debug.Log((object)"计算下载的文件");
+
             m_downLoadList.Clear();
             m_downLoadDic.Clear();
             m_downLoadMD5Dic.Clear();
             m_versionCheckProgress = 0.0f;
+
+
+#if XML
             if (m_gameVersion != null && m_gameVersion.Patches != null && m_gameVersion.Patches.Length > 0U)
             {
                 m_currentPatches = m_gameVersion.Patches[m_gameVersion.Patches.Length - 1];
@@ -416,15 +561,55 @@ namespace RU.Core.VersionCheck
                     }
                 }
             }
+#elif JSON
+            if (null != m_currentGameVersionInfo && null != m_currentGameVersionInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count > 0)
+            {
+                m_currentPatches = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
+                int fileCount = m_currentPatches.Files.Count;
+                float delta = 1f / fileCount;
+
+                if (checkZip)
+                    yield return ReadUnpackMd5File();
+                if (null != m_currentPatches.Files && fileCount > 0)
+                {
+                    int index = 0;
+                    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", m_currentPatches.Files.Count));
+                    foreach (Patch file in m_currentPatches.Files)
+                    {
+                        Patch patch = file;
+                        Debug.Log("patch name :" + patch.Name);
+                        AddDownLoadList(patch, checkZip, GetZipPatchFileMd5(patch));
+                        OnAddDownLoadListProgressUpdate((index + 1) * delta);
+                        yield return WaitProgressAdd(0.02f);
+                        ++index;
+                        patch = null;
+                    }
+                }
+            }
+#endif
         }
 
         private IEnumerator ReadUnpackMd5File()
         {
+#if XML
             string checkFilePath = m_downLoadPath + "/UnpackMd5_" + CurVersion + "_" + CurrentPatches.Version + ".xml";
+#elif JSON
+            string checkFilePath = m_downLoadPath + "/UnpackMd5_" + CurVersion + "_" + CurrentPatches.Version + ".json";
+#endif
             Debug.Log("checkFilePath :" + checkFilePath);
-            yield return ReadUnpackMd5Xml(m_currentPatches.Files[0].Url, checkFilePath);
+            yield return ReadUnpackMd5Inifo(m_currentPatches.Files[0].Url, checkFilePath);
+
+#if XML
             m_zipMd5Data = BinarySerializeOpt.XmlDeserialize(checkFilePath, typeof(ZipMd5Data)) as ZipMd5Data;
+#elif JSON
+            StreamReader sr = new StreamReader(checkFilePath);
+            var content = sr.ReadToEnd();
+            m_zipMd5Data = new UnpackMd5InfoDataModule(JsonMapper.ToObject(content));
+            sr.Close();
+#endif
             yield return null;
+
+
         }
 
         private List<ZipBase> GetZipPatchFileMd5(Patch patch)
@@ -457,7 +642,7 @@ namespace RU.Core.VersionCheck
                 bool flag = true;
                 foreach (ZipBase zipBase in zipBaseList)
                 {
-                    string str2 = !(zipBase.UnpackPath == "") ? string.Format("{0}/{1}/{2}", m_unPackPath, zipBase.UnpackPath, zipBase.Name) : string.Format("{0}/{1}", m_unPackPath, zipBase.Name);
+                    string str2 = zipBase.UnpackPath != "" ? string.Format("{0}/{1}/{2}", m_unPackPath, zipBase.UnpackPath, zipBase.Name) : string.Format("{0}/{1}", m_unPackPath, zipBase.Name);
                     if (File.Exists(str2))
                     {
                         if (MD5Manager.Instance.BuildFileMd5(str2) != zipBase.Md5)
@@ -514,13 +699,13 @@ namespace RU.Core.VersionCheck
         /// <returns></returns>
         public float GetLoadSize()
         {
-            float num1 = m_AlreadyDownList.Sum(x => x.Size);
+            float num1 = m_AlreadyDownList.Sum(x => float.Parse(x.Size));
             float num2 = 0.0f;
             if (m_curDownload != null)
             {
                 Patch patchByGamePath = FindPatchByGamePath(m_curDownload.FileName);
                 if (patchByGamePath != null && !m_AlreadyDownList.Contains(patchByGamePath))
-                    num2 = m_curDownload.GetProcess() * patchByGamePath.Size;
+                    num2 = m_curDownload.GetProcess() * float.Parse(patchByGamePath.Size);
             }
             return num1 + num2;
         }

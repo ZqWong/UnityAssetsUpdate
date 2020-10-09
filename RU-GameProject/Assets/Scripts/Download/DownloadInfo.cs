@@ -1,6 +1,6 @@
 using System;
 
-namespace RU.Core.Download
+namespace Esp.Core.Download
 {
     public class DownloadInfo
     {

@@ -1,9 +1,18 @@
+#define JSON
+
 using System;
 using System.Collections;
 using System.IO;
-using RU.Core.Utils.Core;
+using Esp.Core.Utils.Core;
 
-namespace RU.Core.Download
+#if JSON
+using Esp.VersionCheck.DataModule.Json;
+#elif XML
+using Esp.VersionCheck.DataModule.Xml;
+#endif
+
+
+namespace Esp.Core.Download
 {
     /// <summary>
     /// The download item base class

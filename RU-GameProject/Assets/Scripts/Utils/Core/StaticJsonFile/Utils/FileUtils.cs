@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 
-namespace RU.Scripts.Utils.Core.StaticJsonFile.Utils
+namespace Esp.Scripts.Utils.Core.StaticJsonFile.Utils
 {
 
     public static class FileUtils

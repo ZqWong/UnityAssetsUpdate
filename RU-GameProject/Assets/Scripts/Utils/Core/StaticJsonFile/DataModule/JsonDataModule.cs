@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RU.Assets.Scripts.Utils.Core.StaticJsonFile;
+using Esp.Assets.Scripts.Utils.Core.StaticJsonFile;
 using UnityEngine;
 
-namespace RU.Scripts.Utils.Core.StaticJsonFile.DataModule
+namespace Esp.Scripts.Utils.Core.StaticJsonFile.DataModule
 {
     public abstract class JsonDataModule
     {

@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace RU.Core.Utils.Core
+namespace Esp.VersionCheck.DataModule.Xml
 {
   //TODO：改为json
   /// <summary>

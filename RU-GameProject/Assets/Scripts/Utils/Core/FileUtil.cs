@@ -9,7 +9,7 @@ using System.Collections;
 using System.IO;
 using UnityEngine;
 
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
     public class FileUtil : Singleton<FileUtil>
     {

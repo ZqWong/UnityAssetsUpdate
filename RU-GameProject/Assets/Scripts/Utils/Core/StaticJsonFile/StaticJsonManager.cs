@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RU.Core.Utils.Core;
-using RU.Scripts.Utils.Core.StaticJsonFile.VersionInfoData;
+using Esp.Core.Utils.Core;
+using Esp.Scripts.Utils.Core.StaticJsonFile.VersionInfoData;
 using UnityEngine;
 
-namespace RU.Assets.Scripts.Utils.Core.StaticJsonFile
+namespace Esp.Assets.Scripts.Utils.Core.StaticJsonFile
 {
     public class StaticJsonManager : Singleton<StaticJsonManager>
     {

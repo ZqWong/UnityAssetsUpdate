@@ -11,7 +11,7 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 
-namespace RU.Core.Utils.Core
+namespace Esp.Core.Utils.Core
 {
     public class ZipUtil : Singleton<ZipUtil>
     {

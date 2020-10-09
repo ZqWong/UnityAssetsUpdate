@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace RU.Core.Utils.Core
+namespace Esp.VersionCheck.DataModule.Xml
 {
     // TODO：改为JSON
     /// <summary>

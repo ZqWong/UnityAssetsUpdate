@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LitJson;
 
-namespace RU.Assets.Scripts.Utils.Core.StaticJsonFile.VersionInfoData.DataModule
+namespace Esp.Assets.Scripts.Utils.Core.StaticJsonFile.VersionInfoData.DataModule
 {
     [Serializable]
     public class VersionInfoDataModule
