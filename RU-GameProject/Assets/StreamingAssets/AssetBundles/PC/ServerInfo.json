@@ -1,0 +1,37 @@
+[
+    {
+        "GameVersion": "1.0",
+        "Patches": [
+            {
+                "Des": "测试",
+                "Files": [
+                    {
+                        "Md5": "fe776ef23c816dca2733026573fed609",
+                        "Name": "UnpackMd5_0.1_1.json",
+                        "Platform": "PC",
+                        "RelativePath": "",
+                        "Size": "0.3515625",
+                        "Url": "http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQPC/0.1/1/UnpackMd5_0.1_1.json"
+                    },
+                    {
+                        "Md5": "7681577c19f8b242ca5955d3d11f3e8b",
+                        "Name": "4.txt",
+                        "Platform": "PC",
+                        "RelativePath": "",
+                        "Size": "0.1044922",
+                        "Url": "http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQPC/0.1/1/4.txt"
+                    },
+                    {
+                        "Md5": "f616e058bbb8b231e0d2d79c388c6c3d",
+                        "Name": "Update.zip",
+                        "Platform": "PC",
+                        "RelativePath": "",
+                        "Size": "0.3984375",
+                        "Url": "http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQPC/0.1/1/Update.zip"
+                    }
+                ],
+                "Version": "1"
+            }
+        ]
+    }
+]

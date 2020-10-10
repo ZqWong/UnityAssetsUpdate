@@ -147,13 +147,25 @@ namespace Esp.Core.VersionCheck
             OnProgressSliderChange(info, progress);
         }
 
+        /// <summary>
+        /// 热更新初始化,开始热更流程
+        /// </summary>
+        /// <param name="mono">当前调用热更Mono脚本</param>
+        /// <param name="remoteServerInfoUrl">资源服务器ServerInfo.json路径</param>
+        /// <param name="versionCheckConfirmHandler">确认进行热更按钮回调事件</param>
+        /// <param name="unPackPath">文件加压路径</param>
+        /// <param name="downLoadPath">文件下载路径</param>
+        /// <param name="localServerInfoPath">本地ServerInfo.json比对文件路径</param>
+        /// <param name="localInfoPath">本地ServerInfo.json下载路径</param>
+        /// <param name="progressSliderChangeHandler">进度更新回调</param>
+        /// <param name="itemErrorHandler">错误信息回调</param>
         public void Initialize(
           MonoBehaviour mono,
-          string serverInfoXmlUrl,
+          string remoteServerInfoUrl,
           Action<bool> versionCheckConfirmHandler,
           string unPackPath = "",
           string downLoadPath = "",
-          string serverInfoPath = "",
+          string localServerInfoPath = "",
           string localInfoPath = "",
           Action<string, float> progressSliderChangeHandler = null,
           Action<string> itemErrorHandler = null)
@@ -163,16 +175,16 @@ namespace Esp.Core.VersionCheck
             m_downLoadPath = !string.IsNullOrEmpty(downLoadPath) ? downLoadPath : Application.persistentDataPath + "/DownLoad";
 
 #if XML
-            m_serverXmlPath = !string.IsNullOrEmpty(serverInfoPath) ? serverInfoPath : Application.persistentDataPath + "/ServerInfo.xml";
+            m_serverXmlPath = !string.IsNullOrEmpty(localServerInfoPath) ? localServerInfoPath : Application.persistentDataPath + "/ServerInfo.xml";
             m_localXmlPath = !string.IsNullOrEmpty(localInfoPath) ? localInfoPath : Application.persistentDataPath + "/LocalInfo.xml";
 #elif JSON
-            m_serverJsonPath = !string.IsNullOrEmpty(serverInfoPath) ? serverInfoPath : Application.persistentDataPath + "/ServerInfo.json";
+            m_serverJsonPath = !string.IsNullOrEmpty(localServerInfoPath) ? localServerInfoPath : Application.persistentDataPath + "/ServerInfo.json";
             m_localJsonPath = !string.IsNullOrEmpty(localInfoPath) ? localInfoPath : Application.persistentDataPath + "/LocalInfo.json";
 #endif
 
             OnProgressSliderChange = progressSliderChangeHandler;
             ItemError = itemErrorHandler;
-            m_mono.StartCoroutine(CheckVersionCoroutine(serverInfoXmlUrl, versionCheckConfirmHandler));
+            m_mono.StartCoroutine(CheckVersionCoroutine(remoteServerInfoUrl, versionCheckConfirmHandler));
         }
 
         public IEnumerator CheckVersionCoroutine(string serverInfoRemotePath, Action<bool> versionCheckConfirmHandler = null)

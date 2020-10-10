@@ -68,7 +68,7 @@ namespace Esp.VersionCheck.DataModule.Json
             Version = data["Version"] == null ? "" : data["Version"].ToString();
             Des = data["Des"] == null ? "" : data["Des"].ToString();
 
-            foreach (JsonData item in data["Packages"])
+            foreach (JsonData item in data["Files"])
             {
                 Files.Add(new Patch(item));
             }
