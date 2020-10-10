@@ -88,6 +88,9 @@ namespace Esp.VersionCheck.DataModule.Json
         }
     }
 
+    /// <summary>
+    /// 单个更新文件信息
+    /// </summary>
     [Serializable]
     public class Patch
     {

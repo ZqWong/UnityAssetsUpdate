@@ -540,6 +540,8 @@ namespace Esp.Core.VersionCheck
             // Json
             if (null == m_currentGameVersionInfo || null == m_currentGameVersionInfo.PatchInfos || m_currentGameVersionInfo.PatchInfos.Count <= 0)
                 return;
+
+            //TODO :只获取了最后一个版本的更新信息, 应该与当前版本做匹配去中间所有未更新的版本信息
             var patchInfo = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
             if (null != patchInfo && null != patchInfo.Files)
             {
@@ -602,7 +604,6 @@ namespace Esp.Core.VersionCheck
                 }
             }
 #elif JSON
-            // TODO: 多版本间隔更新实现, 当前只能更新最后一个版本
             if (null != m_currentGameVersionInfo && null != m_currentGameVersionInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count > 0)
             {
                 m_currentPatches = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
