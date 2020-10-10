@@ -4,6 +4,7 @@ using Esp.Core.VersionCheck;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
+using System.IO;
 
 public class VersionUpdateManager : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class VersionUpdateManager : MonoBehaviour
     [SerializeField] private Text m_assetContentText;
     [SerializeField] private GameObject m_confirmPanel;
     [SerializeField] private Text m_updateContent;
+    [SerializeField] private Text m_messageText;
 
     private Action StartLoadCallback;
     private string xmlURLFormat
@@ -22,7 +24,11 @@ public class VersionUpdateManager : MonoBehaviour
 
     public void Start()
     {
-        Initialize(() => { Debug.LogError("Download complete"); });
+        //StaticJsonManager.Instance.Initialize();
+        //Initialize(() => { Debug.LogError("Download complete"); });
+        ////  Initialize(() => { Debug.LogError("Download complete"); });
+        //Debug.LogError("Version :" + StaticJsonManager.Instance.VersionInfo.VersionInfo.Version);
+        //Debug.LogError("PackageName :" + StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName);
 
 
     }
@@ -77,6 +83,8 @@ public class VersionUpdateManager : MonoBehaviour
         //Initialize(() => { Debug.LogError("Download complete"); });
     }
 
+    private string localAssetPath;
+
     public void Initialize(Action startLoadCallback)
     {
         Debug.Log("VersionUpdateManager Initialize ");
@@ -90,7 +98,7 @@ public class VersionUpdateManager : MonoBehaviour
         string xmlURL = "";
         if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor)
         {
-            head = Application.streamingAssetsPath+ "/AssetBundles/PC";
+            head = Application.streamingAssetsPath + "/AssetBundles/PC";
             m_UnPackPath = head;
             m_DownLoadPath = head;
             m_ServerXmlPath = head + "/ServerInfo.json";
@@ -106,6 +114,17 @@ public class VersionUpdateManager : MonoBehaviour
             m_LocalXmlPath = head + "/LocalInfo.xml";
             xmlURL = String.Format(xmlURLFormat, "Android");
         }
+        else if (Application.platform == RuntimePlatform.IPhonePlayer || Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.WindowsEditor)
+        {
+            head = Application.persistentDataPath + "/AssetBundles/IOS";
+            m_UnPackPath = head;
+            m_DownLoadPath = head;
+            m_ServerXmlPath = head + "/ServerInfo.json";
+            m_LocalXmlPath = head + "/LocalInfo.json";
+            xmlURL = String.Format(xmlURLFormat, "PC");
+        }
+
+        localAssetPath = head;
 
         HotPatchManager.Instance.Initialize(this, xmlURL, CheckVersionCallback, m_UnPackPath, m_DownLoadPath,
             m_ServerXmlPath, m_LocalXmlPath, OnDownloadProgressUpdate);
@@ -130,7 +149,7 @@ public class VersionUpdateManager : MonoBehaviour
         {
             StartCoroutine(OnEnterGame());
         }
-        
+
     }
 
     #region 文件大小计算
@@ -198,5 +217,39 @@ public class VersionUpdateManager : MonoBehaviour
         m_assetProgressSlider.value = value;
         //更新进度
         //LoadingPanel.Instance.OnProgressUpdate(info, value);
+    }
+
+    public void OnClickDeleteFilesBtn()
+    {
+        if (System.IO.Directory.Exists(localAssetPath))
+        {
+            Debug.LogError("   存在 删除文件夹 ");
+            m_messageText.text = string.Format(DateTime.Now + " 存在 删除文件夹 【{0}】", localAssetPath);
+            // System.IO.Directory.Delete(@updateAssets.list[0].LocalUrl);
+            try
+            {
+                var dir = new System.IO.DirectoryInfo(localAssetPath);
+                var files = dir.GetFiles();
+                foreach (var file in files)
+                {
+                    m_messageText.text += "\n fileName :" + file.Name;
+                }
+                dir.Attributes = dir.Attributes & ~FileAttributes.ReadOnly;
+                dir.Delete(true);
+            }
+            catch (Exception ex)
+            {
+                m_messageText.text = string.Format(DateTime.Now + " 文件夹存在 删除文件夹时 出现错误 【{0}】", ex.Message);
+            }
+        }
+        else
+        {
+            m_messageText.text = DateTime.Now + "不存在指定文件夹 ：" + localAssetPath;
+        }
+    }
+
+    public void OnClickStart()
+    {
+        Initialize(() => { Debug.LogError("Download complete"); });
     }
 }
