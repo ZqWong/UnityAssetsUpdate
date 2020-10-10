@@ -1,5 +1,3 @@
-#define JSON
-
 using System;
 using System.Collections;
 using System.IO;

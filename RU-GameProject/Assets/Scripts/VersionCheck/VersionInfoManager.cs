@@ -3,10 +3,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
-using Esp.Assets.Scripts.Utils.Core.StaticJsonFile.VersionInfoData.DataModule;
-using Esp.Scripts.Utils.Core.StaticJsonFile.Utils;
+using Esp.VersionCheck.DataModule.Json;
+using LitJson;
 
 public class VersionTxtManager
 {
@@ -25,7 +26,21 @@ public class VersionTxtManager
         VersionInfoDataModule data = new VersionInfoDataModule();
         data.Version = PlayerSettings.bundleVersion;
         data.PackageName = PlayerSettings.applicationIdentifier;
-        FileUtils.WriteJSONDataInFile(data, Application.dataPath + "/Resources/" + VersionJsonFileName);
+        var content = JsonMapper.ToJson(data);
+        
+        var path = Application.streamingAssetsPath + "/LocalVersion";
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+        var fullPath = Path.Combine(path, VersionJsonFileName);
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
+        File.WriteAllText(fullPath, content, Encoding.UTF8);
+
+        Debug.Log("<color=yellow>" + "写入版本信息：" + content + "\nfullPath : "+ fullPath + "</color>");
 
 #elif XML
         string content = "Version|" + version + ";PackageName|" + package + ";";

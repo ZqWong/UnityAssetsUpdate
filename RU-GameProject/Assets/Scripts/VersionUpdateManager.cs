@@ -3,7 +3,6 @@ using System.Collections;
 using Esp.Core.VersionCheck;
 using UnityEngine;
 using UnityEngine.UI;
-using Esp.Assets.Scripts.Utils.Core.StaticJsonFile;
 using UnityEditor;
 
 public class VersionUpdateManager : MonoBehaviour
@@ -23,11 +22,9 @@ public class VersionUpdateManager : MonoBehaviour
 
     public void Start()
     {
-        StaticJsonManager.Instance.Initialize();
         Initialize(() => { Debug.LogError("Download complete"); });
-        //  Initialize(() => { Debug.LogError("Download complete"); });
-        Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.Version);
-        Debug.LogError(StaticJsonManager.Instance.VersionInfo.VersionInfo.PackageName);
+
+
     }
 
     //private Slider m_ProgressSlider;

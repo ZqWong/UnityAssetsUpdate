@@ -1,5 +1,3 @@
-#define JSON
-
 using System;
 using System.Collections;
 using System.IO;
@@ -76,7 +74,7 @@ namespace Esp.Core.Download
         /// Get file size (M) useless!
         /// </summary>
         /// <returns></returns>
-        public float Size() => float.Parse(m_patch.Size) / 1024f;
+        public float Size() => float.Parse(m_patch.Size.ToString()) / 1024f;
 
         /// <summary>
         /// Initialize download task

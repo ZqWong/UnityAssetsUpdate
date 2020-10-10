@@ -15,7 +15,6 @@ using UnityEngine;
 using UnityEngine.Networking;
 #if JSON
 using LitJson;
-using Esp.Assets.Scripts.Utils.Core.StaticJsonFile;
 using Esp.VersionCheck.DataModule.Json;
 
 #elif XML
@@ -27,6 +26,8 @@ namespace Esp.Core.VersionCheck
 {
     public class HotPatchManager : Singleton<HotPatchManager>
     {
+        private readonly string LOCAL_VERSION_INFO_FILE_PATH = Application.streamingAssetsPath + "/LocalVersion/Version.json";
+
         private MonoBehaviour m_mono;
         private string m_unPackPath = Application.persistentDataPath + "/Origin";
         private string m_downLoadPath = Application.persistentDataPath + "/DownLoad";
@@ -281,7 +282,7 @@ namespace Esp.Core.VersionCheck
                 yield return ComputeDownload(true);
             }
             LoadFileCount = m_downLoadList.Count;
-            LoadSumSize = m_downLoadList.Sum(x => float.Parse(x.Size));
+            LoadSumSize = m_downLoadList.Sum(x => float.Parse(x.Size.ToString()));
             m_targetVersionCheckProgress = 1f;
             versionCheckConfirmHandler?.Invoke(m_downLoadList.Count > 0);            
         }
@@ -345,9 +346,16 @@ namespace Esp.Core.VersionCheck
         private void ReadVersion()
         {
 #if JSON
+            StreamReader sr = new StreamReader(LOCAL_VERSION_INFO_FILE_PATH);
+            var content = sr.ReadToEnd();
+            var localVersionInfo = new VersionInfoDataModule(JsonMapper.ToObject(content));
+            sr.Close();
+
             // 从本地文件获取打包信息
-            m_curVersion = StaticJsonManager.Instance.VersionInfo.VersionInfo.Version;
-            m_curPackName = StaticJsonManager.Instance.VersionInfo.VersionInfo.Version;
+            m_curVersion = localVersionInfo.Version;
+            m_curPackName = localVersionInfo.PackageName;
+
+            Debug.Log(string.Format("Get local version info, Version : {0} PackageName : {1}.", m_curVersion, m_curPackName));
 
 #elif XML
             TextAsset textAsset = Resources.Load<TextAsset>("Version");
@@ -699,13 +707,13 @@ namespace Esp.Core.VersionCheck
         /// <returns></returns>
         public float GetLoadSize()
         {
-            float num1 = m_AlreadyDownList.Sum(x => float.Parse(x.Size));
+            float num1 = m_AlreadyDownList.Sum(x => float.Parse(x.Size.ToString()));
             float num2 = 0.0f;
             if (m_curDownload != null)
             {
                 Patch patchByGamePath = FindPatchByGamePath(m_curDownload.FileName);
                 if (patchByGamePath != null && !m_AlreadyDownList.Contains(patchByGamePath))
-                    num2 = m_curDownload.GetProcess() * float.Parse(patchByGamePath.Size);
+                    num2 = m_curDownload.GetProcess() * float.Parse(patchByGamePath.Size.ToString());
             }
             return num1 + num2;
         }
