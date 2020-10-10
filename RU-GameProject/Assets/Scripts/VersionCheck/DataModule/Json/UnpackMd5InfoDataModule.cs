@@ -20,7 +20,7 @@ namespace Esp.VersionCheck.DataModule.Json
 		public UnpackMd5InfoDataModule(JsonData data)
 		{
             ZipMd5List = new List<ZipMd5>();
-			foreach (JsonData item in data)
+			foreach (JsonData item in data["ZipMd5List"])
 			{
                 ZipMd5List.Add(new ZipMd5(item));
 			}
@@ -65,8 +65,8 @@ namespace Esp.VersionCheck.DataModule.Json
         {
             Name = data["Name"].ToString();
             Md5 = data["Md5"].ToString();
-            PackageName = data["ZipName"].ToString();
-            UnpackPath = data["UnPackPath"].ToString();
+            PackageName = data["PackageName"].ToString();
+            UnpackPath = data["UnpackPath"].ToString();
         }
     }
 }

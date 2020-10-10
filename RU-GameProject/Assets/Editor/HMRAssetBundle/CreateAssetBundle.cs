@@ -474,7 +474,11 @@ public class CreateAssetBundle : MonoBehaviour
         unpackPatch.Size = (unpackFileInfoExtend.FileInfo.Length / 1024.0f).ToString();
 #endif
         unpackPatch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
-        unpackPatch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
+
+        var remotePlatformBasePath =
+            Path.Combine(PlatformInfoManager.GetServerUrl(), PlatformInfoManager.GetCurrentPlatformPath());
+        var localUnpackPath = Path.Combine(unpackHotDic, unpackFileInfoExtend.FileInfo.Name);
+        unpackPatch.Url = Path.Combine(remotePlatformBasePath, localUnpackPath).Replace("\\", "/"); ;
         patches.Files.Add(unpackPatch);
 
         File.Delete(unpackFileInfoExtend.FileInfo.FullName);
@@ -515,11 +519,11 @@ public class CreateAssetBundle : MonoBehaviour
 #elif JSON
                 patch.Size = (changeList[i].FileInfo.Length / 1024.0f).ToString();
 #endif
+                var matchFilePath = Path.Combine(hotDic, changeList[i].FileInfo.Name);
                 patch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
-                patch.Url = PlatformInfoManager.GetServerUrl() + PlatformInfoManager.GetCurrentPlatformPath() + "/" + hotDic + "/" + changeList[i].FileInfo.Name;
+                patch.Url = Path.Combine(remotePlatformBasePath, matchFilePath).Replace("\\","/");
                 patch.RelativePath = changeList[i].RelativePath;
                 patches.Files.Add(patch);
-
             }
         }
 
