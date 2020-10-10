@@ -14,6 +14,9 @@ namespace Esp.VersionCheck.DataModule.Json
             GameVersionInfos = new List<GameVersionInfo>();
         }
 
+        /// <summary>
+        /// 以APP Version 做区分的更新列表
+        /// </summary>
         public List<GameVersionInfo> GameVersionInfos;
 
         public ServerInfoDataModule(JsonData data)
@@ -34,7 +37,13 @@ namespace Esp.VersionCheck.DataModule.Json
             PatchInfos = new List<Patches>();
         }
 
+        /// <summary>
+        /// APP Version
+        /// </summary>
         public string GameVersion;
+        /// <summary>
+        /// 对应ServerInfo.json中的 Patches字段
+        /// </summary>
         public List<Patches> PatchInfos;
 
         public GameVersionInfo(JsonData data)
@@ -59,6 +68,10 @@ namespace Esp.VersionCheck.DataModule.Json
 
         public string Version;
         public string Des;
+
+        /// <summary>
+        /// 对应Files
+        /// </summary>
         public List<Patch> Files;
 
         public Patches(JsonData data)

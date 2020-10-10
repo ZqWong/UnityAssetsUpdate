@@ -27,15 +27,36 @@ namespace Esp.Core.VersionCheck
         private string m_unPackPath = Application.persistentDataPath + "/Origin";
         private string m_downLoadPath = Application.persistentDataPath + "/DownLoad";
         
+        /// <summary>
+        /// 当前APP Version
+        /// </summary>
         private string m_curVersion;
+        /// <summary>
+        /// 当前APP Package Name
+        /// </summary>
         private string m_curPackName;
 
 #if JSON
+        /// <summary>
+        /// 服务器Server.json本地缓存路径
+        /// </summary>
         private string m_serverJsonPath = Application.persistentDataPath + "/ServerInfo.json";
+        /// <summary>
+        /// Server.json本地存储路径
+        /// </summary>
         private string m_localJsonPath = Application.persistentDataPath + "/LocalInfo.json";
         
+        /// <summary>
+        /// 服务端的版本信息
+        /// </summary>
         private ServerInfoDataModule m_serverInfoDataModule;
+        /// <summary>
+        /// 本地的版本信息
+        /// </summary>
         private ServerInfoDataModule m_localInfoDataModule;
+        /// <summary>
+        /// 当前APP Version 所对应的所有更新信息
+        /// </summary>
         private GameVersionInfo m_currentGameVersionInfo;
         private Patches m_currentPatches;
 
