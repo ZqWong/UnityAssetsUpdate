@@ -1,8 +1,3 @@
-// 开启重构模式
-#if REBUILD
- #define JSON //XML JSON
-#endif
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
