@@ -137,13 +137,13 @@ namespace Esp.Core.VersionCheck
         }
 
         // 需要下载的资源总个数
-        public int LoadFileCount { get; set; } = 0;
+        public int LoadFileCount { get; set; }
         // 需要下载资源的总大小 KB
-        public float LoadSumSize { get; set; } = 0.0f;
+        public float LoadSumSize { get; set; }
         //解压文件总大小
-        public float UnPackSumSize { get; set; } = 0.0f;
+        public float UnPackSumSize { get; set; }
         //已解压大小
-        public float AlreadyUnPackSize { get; set; } = 0.0f;
+        public float AlreadyUnPackSize { get; set; }
 
         private void ChangeProgressSlider(string info, float progress)
         {
@@ -284,7 +284,10 @@ namespace Esp.Core.VersionCheck
             LoadFileCount = m_downLoadList.Count;
             LoadSumSize = m_downLoadList.Sum(x => float.Parse(x.Size.ToString()));
             m_targetVersionCheckProgress = 1f;
-            versionCheckConfirmHandler?.Invoke(m_downLoadList.Count > 0);            
+            if (null != versionCheckConfirmHandler)
+            {
+                versionCheckConfirmHandler.Invoke(m_downLoadList.Count > 0);
+            }
         }
 
         /// <summary>
@@ -447,7 +450,10 @@ namespace Esp.Core.VersionCheck
             }
 
             yield return WaitProgressAdd(0.02f);
-            callBack?.Invoke();
+            if (null != callBack)
+            {
+                callBack.Invoke();
+            }
         }
 
 #endif

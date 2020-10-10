@@ -16,7 +16,10 @@ namespace Esp.Core.Utils.Core
         public Action<float> UpdateProgress = (Action<float>)null;
         private long m_SpeedLimit = 1000000;
 
-        public void SetSpeedLimit(long speed) => this.m_SpeedLimit = speed;
+        public void SetSpeedLimit(long speed)
+        {
+            this.m_SpeedLimit = speed;
+        }
 
         public IEnumerator CreateFile(
           string filePath,

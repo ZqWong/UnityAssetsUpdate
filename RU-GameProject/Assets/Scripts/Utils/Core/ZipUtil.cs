@@ -25,7 +25,10 @@ namespace Esp.Core.Utils.Core
         private ZipEntry ent = (ZipEntry)null;
         private byte[] data;
 
-        public void SetUnPackSpeedLimit(long speed) => this.m_UnPackSpeed = speed;
+        public void SetUnPackSpeedLimit(long speed)
+        {
+            this.m_UnPackSpeed = speed;
+        }
 
         public float Progress { get; private set; }
 

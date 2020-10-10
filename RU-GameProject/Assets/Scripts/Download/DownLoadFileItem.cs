@@ -56,25 +56,37 @@ namespace Esp.Core.Download
         /// Get current download progress value
         /// </summary>
         /// <returns></returns>
-        public override float GetProcess() => m_progress;
+        public override float GetProcess()
+        {
+            return m_progress;
+        }
 
         /// <summary>
         /// Get current download progress value with percent formmat
         /// </summary>
         /// <returns></returns>
-        public string GetProcessText() => ((m_progress * 100.0) % 100).ToString() + "%";
+        public string GetProcessText()
+        {
+            return ((m_progress * 100.0) % 100).ToString() + "%";
+        }
 
         /// <summary>
         /// Get need unpack
         /// </summary>
         /// <returns></returns>
-        public bool NeedUncompress() => m_url.EndsWith(".zip");
+        public bool NeedUncompress()
+        {
+            return m_url.EndsWith(".zip");
+        }
 
         /// <summary>
         /// Get file size (M) useless!
         /// </summary>
         /// <returns></returns>
-        public float Size() => float.Parse(m_patch.Size.ToString()) / 1024f;
+        public float Size()
+        {
+            return float.Parse(m_patch.Size.ToString()) / 1024f;
+        }
 
         /// <summary>
         /// Initialize download task
@@ -111,7 +123,10 @@ namespace Esp.Core.Download
             {
                 if (m_webRequest.error != null)
                 {
-                    OnErrorThrown?.Invoke("下载中断，请重启App :" + FileName + " " + m_webRequest.error);
+                    if (null != OnErrorThrown)
+                    {
+                        OnErrorThrown.Invoke("下载中断，请重启App :" + FileName + " " + m_webRequest.error);
+                    }
                     //if (OnErrorThrown != null)
                     //    OnErrorThrown("下载中断，请重启App " + FileName + "       " + m_webRequest.error);
                     yield return new WaitForEndOfFrame();
@@ -125,7 +140,10 @@ namespace Esp.Core.Download
             }
             if (m_webRequest.error != null)
             {
-                OnErrorThrown?.Invoke("下载中断，请重启App :" + FileName + " " + m_webRequest.error);
+                if (null != OnErrorThrown)
+                {
+                    OnErrorThrown.Invoke("下载中断，请重启App :" + FileName + " " + m_webRequest.error);
+                }
                 //if (OnErrorThrown != null)
                 //    OnErrorThrown("下载异常，请重启App " + FileName + "       " + m_webRequest.error);
                 yield return new WaitForEndOfFrame();
@@ -171,7 +189,10 @@ namespace Esp.Core.Download
                 yield return new WaitForEndOfFrame();
                 m_info.CurrentState = DownloadInfo.State.COMPLETE;
                 yield return new WaitForEndOfFrame();
-                completeCallback?.Invoke();
+                if (null != completeCallback)
+                {
+                    completeCallback.Invoke();
+                }
                 //if (completeCallback != null)
                 //    completeCallback();
                 dir = null;
@@ -193,7 +214,10 @@ namespace Esp.Core.Download
             return (long)(m_webRequest != null ? m_webRequest.downloadedBytes : 0L);
         }
 
-        public override long GetLength() => 0;
+        public override long GetLength()
+        {
+            return 0;
+        }
 
         public override void Destory()
         {
