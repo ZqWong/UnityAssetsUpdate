@@ -206,10 +206,7 @@ namespace Esp.Core.VersionCheck
             ReadVersion();
             ChangeProgressSlider("正在获取版本信息", 0.5f);
 
-#if JSON 
-            // For test, Read the json file from remote server.
-            //yield return ReadServerInfoJson(
-            //    @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/PC/ServerInfo.json", null);
+#if JSON
 
             yield return ReadServerInfoJson(serverInfoRemotePath, () =>
             {
@@ -224,13 +221,12 @@ namespace Esp.Core.VersionCheck
                 else
                 {
                     var matchedVersionInfo = m_serverInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
-                    Debug.Assert(null == matchedVersionInfo, "Get matched server info failed");
+                    Debug.Assert(null != matchedVersionInfo, "Get matched server info failed");
                     if (null != matchedVersionInfo)
                         m_currentGameVersionInfo = matchedVersionInfo;
                     GetHotAB();
                 }
             });
-
 #elif XML
             yield return ReadServerInfoXml(serverInfoRemotePath, () =>
             {
@@ -285,6 +281,8 @@ namespace Esp.Core.VersionCheck
             }
             else
             {
+                if (File.Exists(m_serverJsonPath))
+                    File.Delete(m_serverJsonPath);
                 Debug.Log("不需要更新，但是仍然要检查一下文件的完整性");
                 yield return ComputeDownload(true);
             }
@@ -300,20 +298,21 @@ namespace Esp.Core.VersionCheck
         /// <summary>
         /// 检查本地热更信息与服务器热更信息比较
         /// </summary>
-        /// <returns></returns>
+        /// <returns> false 不需要更新, true 需要更新</returns>
         private bool CheckLocalAndServerPatch()
         {
 #if JSON
             if (!File.Exists(m_localJsonPath))
                 return true;
-
+            
+            // 读取本地版本信息
             StreamReader sr = new StreamReader(m_localJsonPath);
             var content = sr.ReadToEnd();
             m_localInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
             sr.Close();
 
+            // 匹配与当前APP Version所匹配的资源信息
             GameVersionInfo matchInfo = null;
-
             if (null != m_localInfoDataModule)
             {
                 var info = m_localInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
@@ -323,6 +322,7 @@ namespace Esp.Core.VersionCheck
 	            }                
 	        }
 
+            // 与服务端对应的APP Version相关信息进行比对, 如果当前的热更好与服务器端最新的一样就返回true;
             return null != matchInfo &&
                    null != m_currentGameVersionInfo.PatchInfos &&
                    (null != matchInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count != 0) &&
@@ -447,8 +447,6 @@ namespace Esp.Core.VersionCheck
                     var content = sr.ReadToEnd();
                     m_serverInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
                     sr.Close();
-                    Debug.LogError("serverInfoDataModule :" + m_serverInfoDataModule.GameVersionInfos[0].GameVersion);
-                    Debug.LogError("serverInfoDataModule :" + m_serverInfoDataModule.GameVersionInfos[0].PatchInfos[0].Version);
                 }
                 else
                 {
@@ -583,6 +581,7 @@ namespace Esp.Core.VersionCheck
                 }
             }
 #elif JSON
+            // TODO: 多版本间隔更新实现, 当前只能更新最后一个版本
             if (null != m_currentGameVersionInfo && null != m_currentGameVersionInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count > 0)
             {
                 m_currentPatches = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];

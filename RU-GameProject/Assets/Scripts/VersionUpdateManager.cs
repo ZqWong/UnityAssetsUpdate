@@ -98,7 +98,7 @@ public class VersionUpdateManager : MonoBehaviour
         string xmlURL = "";
         if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor)
         {
-            head = Application.streamingAssetsPath + "/AssetBundles/PC";
+            head = Application.persistentDataPath + "/AssetBundles/PC";
             m_UnPackPath = head;
             m_DownLoadPath = head;
             m_ServerXmlPath = head + "/ServerInfo.json";
