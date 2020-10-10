@@ -8,9 +8,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: -392178869, guid: 1dbf8b86e890fa043b857a1a3434c29c, type: 3}
   m_Name: PlatformConfig
-  m_EditorClassIdentifier: Assembly-CSharp-Editor::TargetPlatform
+  m_EditorClassIdentifier: 
   m_PlatformNamePath:
   - PlatformName: PC
     Path: PC
