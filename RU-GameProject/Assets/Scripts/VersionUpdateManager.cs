@@ -135,9 +135,20 @@ public class VersionUpdateManager : MonoBehaviour
         Debug.Log("更新： " + isHot);
         if (isHot)
         {
+            string des = string.Empty;
+#if XML
+            des = HotPatchManager.Instance.CurrentPatches.Des;     
+#elif JSON
+
+            foreach (var patch in HotPatchManager.Instance.CurrentPatches)
+            {
+                des += "\n" + patch.Des;
+            }
+
+#endif
             string sizeString = GetDownloadLength(HotPatchManager.Instance.LoadSumSize);
             string info = string.Format("存在热更新 : {0}   文件数量 :{1}  文件总大小: {2}内容 ：{3}", isHot,
-                HotPatchManager.Instance.LoadFileCount, sizeString, HotPatchManager.Instance.CurrentPatches.Des);
+                HotPatchManager.Instance.LoadFileCount, sizeString, des);
 
             m_confirmPanel.SetActive(true);
             m_updateContent.text = info;

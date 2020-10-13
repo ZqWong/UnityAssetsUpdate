@@ -38,27 +38,53 @@ namespace Esp.Core.VersionCheck
 
 #if JSON
         /// <summary>
-        /// 服务器Server.json本地缓存路径
+        /// (Server) 服务器Server.json本地缓存路径
         /// </summary>
         private string m_serverJsonPath = Application.persistentDataPath + "/ServerInfo.json";
         /// <summary>
-        /// Server.json本地存储路径
+        /// (Local) Server.json本地存储路径
         /// </summary>
         private string m_localJsonPath = Application.persistentDataPath + "/LocalInfo.json";
         
         /// <summary>
-        /// 服务端的版本信息
+        /// (Server) 服务端的版本信息
         /// </summary>
         private ServerInfoDataModule m_serverInfoDataModule;
+
         /// <summary>
-        /// 本地的版本信息
+        /// (Local) 本地的版本信息
         /// </summary>
         private ServerInfoDataModule m_localInfoDataModule;
+
+
+        private List<Patches> m_needUpdatePatchesInfos = new List<Patches>();
+
         /// <summary>
-        /// 当前APP Version 所对应的所有更新信息
+        /// (Local) 本地对应热更版本的资源版本号 LocalVersion.json -> GameVersion(matched) -> Version
+        /// </summary>
+        private string m_localVersion = "0";
+
+        /// <summary>
+        /// (Local) 本地与服务器更新列表中,当前资源版本序号;
+        /// </summary>
+        private int m_localVersionIndex = 0;
+
+        /// <summary>
+        /// (Server) 当前APP Version 所对应的所有更新信息
         /// </summary>
         private GameVersionInfo m_currentGameVersionInfo;
+
+        /// <summary>
+        /// JSON 模式弃用的,请使用 m_needUpdatePatchesInfos 代替;
+        /// </summary>
+        [Obsolete]
         private Patches m_currentPatches;
+
+        //当前热更Patches    
+        public List<Patches> CurrentPatches
+        {
+            get { return m_needUpdatePatchesInfos; }
+        }
 
         /// <summary>
         /// 当前版本所有需要下载的文件列表
@@ -95,6 +121,12 @@ namespace Esp.Core.VersionCheck
         /// </summary>
         private Dictionary<string, Patch> m_downLoadDic = new Dictionary<string, Patch>();
 
+        //当前热更Patches    
+        public Patches CurrentPatches
+        {
+            get { return m_currentPatches; }
+        }
+
         private ZipMd5Data m_zipMd5Data;
 #endif
 
@@ -105,9 +137,12 @@ namespace Esp.Core.VersionCheck
         private Dictionary<string, string> m_downLoadMD5Dic = new Dictionary<string, string>();        
 
         /// <summary>
-        /// number of retries
+        /// Retries count cache
         /// </summary>        
         private int m_tryDownCount = 0;
+        /// <summary>
+        /// Max retries count
+        /// </summary>
         private const int DOWNLOADCOUNT = 2;
 
         /// <summary>
@@ -141,11 +176,6 @@ namespace Esp.Core.VersionCheck
             get { return m_curVersion; }
         }
 
-        //当前热更Patches    
-        public Patches CurrentPatches
-        {
-            get { return m_currentPatches; }
-        }
 
         public DownLoadFileItem CurrentDownLoadFileItem
         {
@@ -245,7 +275,7 @@ namespace Esp.Core.VersionCheck
                     Debug.Assert(null != matchedVersionInfo, "Get matched server info failed");
                     if (null != matchedVersionInfo)
                         m_currentGameVersionInfo = matchedVersionInfo;
-                    GetHotAB();
+                    //GetHotAB();
                 }
             });
 #elif XML
@@ -338,16 +368,20 @@ namespace Esp.Core.VersionCheck
             {
                 var info = m_localInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
                 if (null != info)
-	            {
+                {
+                    // 获取当前本地资源版本
                     matchInfo = info;
-	            }                
+                    m_localVersionIndex = matchInfo.PatchInfos.Count;
+                    m_localVersion = matchInfo.PatchInfos[m_localVersionIndex - 1].Version;
+                    Debug.Log("当前本地资源版本 : " + m_localVersion);
+                }                
 	        }
 
             // 与服务端对应的APP Version相关信息进行比对, 如果当前的热更好与服务器端最新的一样就返回true;
             return null != matchInfo &&
                    null != m_currentGameVersionInfo.PatchInfos &&
                    (null != matchInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count != 0) &&
-                   m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1].Version != matchInfo.PatchInfos[matchInfo.PatchInfos.Count - 1].Version;
+                   m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1].Version != m_localVersion;
 #elif XML
             if (!File.Exists(m_localXmlPath))
                 return true;
@@ -542,14 +576,62 @@ namespace Esp.Core.VersionCheck
                 return;
 
             //TODO :只获取了最后一个版本的更新信息, 应该与当前版本做匹配去中间所有未更新的版本信息
-            var patchInfo = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
-            if (null != patchInfo && null != patchInfo.Files)
+            //OPTION 1 : 以Version进行排序, 在针对同名文件进行低版本剔除,避免二次下载,做保留最新的版本, 但是需要注意的是包的内容要进行把控,只更新不减资源.
+            //OPTION 2 : 依次更新各个中间版本, 要对本地版本文件进行处理.
+
+
+            var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.Skip(m_localVersionIndex).ToList();
+
+            //var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.GetRange(m_localVersionIndex,
+            //    m_currentGameVersionInfo.PatchInfos.Count);
+
+            for (int i = needUpdatePatchesInfos.Count - 1; i >= 1; i--)
             {
-                foreach (var file in patchInfo.Files)
+                foreach (var latestVersionFile in needUpdatePatchesInfos[i].Files)
                 {
-                    m_hmrDic.Add(file.Name, file);
+                    for (int j = needUpdatePatchesInfos.Count - i - 1; j >= 0; j--)
+                    {
+                        var matchedItem = needUpdatePatchesInfos[j].Files.FirstOrDefault(item =>
+                            item.Name == latestVersionFile.Name &&
+                            item.Platform == latestVersionFile.Platform);
+                        var removeComplete = needUpdatePatchesInfos[j].Files.Remove(matchedItem);
+                        if (removeComplete)
+                            Debug.Log(string.Format("Found a asset with the same name ({0}) in an older version. [REMOVE] :{1}", latestVersionFile.Name, removeComplete.ToString()));
+                    }
                 }
             }
+
+            foreach (Patches patch in needUpdatePatchesInfos)
+            {
+                foreach (var file in patch.Files)
+                {
+                    Debug.Log(string.Format("Patch : {0}, File Name:{1}, Md5:{2}", patch.Version, file.Name, file.Md5));
+                }
+            }
+
+
+            if (null != needUpdatePatchesInfos)
+            {
+                foreach (var patchesInfo in needUpdatePatchesInfos)
+                {
+                    if (null != patchesInfo && null != patchesInfo.Files)
+                    {
+                        foreach (var file in patchesInfo.Files)
+                        {
+                            m_hmrDic.Add(file.Name, file);
+                        }
+                    }
+                }
+            }
+
+            //var patchInfo = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
+            //if (null != patchInfo && null != patchInfo.Files)
+            //{
+            //    foreach (var file in patchInfo.Files)
+            //    {
+            //        m_hmrDic.Add(file.Name, file);
+            //    }
+            //}
 #elif XML
             // Xml
             if (m_gameVersion == null || m_gameVersion.Patches == null || m_gameVersion.Patches.Length <= 0U)
@@ -606,27 +688,90 @@ namespace Esp.Core.VersionCheck
 #elif JSON
             if (null != m_currentGameVersionInfo && null != m_currentGameVersionInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count > 0)
             {
-                m_currentPatches = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
-                int fileCount = m_currentPatches.Files.Count;
+                //m_currentPatches = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
+                //int fileCount = m_currentPatches.Files.Count;
+                //float delta = 1f / fileCount;
+
+                //if (checkZip)
+                //    yield return ReadUnpackMd5File();
+                //if (null != m_currentPatches.Files && fileCount > 0)
+                //{
+                //    int index = 0;
+                //    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", m_currentPatches.Files.Count));
+                //    foreach (Patch file in m_currentPatches.Files)
+                //    {
+                //        Patch patch = file;
+                //        Debug.Log("patch name :" + patch.Name);
+                //        AddDownLoadList(patch, checkZip, GetZipPatchFileMd5(patch));
+                //        OnAddDownLoadListProgressUpdate((index + 1) * delta);
+                //        yield return WaitProgressAdd(0.02f);
+                //        ++index;
+                //        patch = null;
+                //    }
+                //}
+
+                //=--=-=-=-=-=-=-=-=-
+
+                m_needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.Skip(m_localVersionIndex).ToList();
+
+                //var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.GetRange(m_localVersionIndex,
+                //    m_currentGameVersionInfo.PatchInfos.Count);
+
+                for (int i = m_needUpdatePatchesInfos.Count - 1; i >= 1; i--)
+                {
+                    foreach (var latestVersionFile in m_needUpdatePatchesInfos[i].Files)
+                    {
+                        for (int j = m_needUpdatePatchesInfos.Count - i - 1; j >= 0; j--)
+                        {
+                            var matchedItem = m_needUpdatePatchesInfos[j].Files.FirstOrDefault(item =>
+                                item.Name == latestVersionFile.Name &&
+                                item.Platform == latestVersionFile.Platform);
+                            var removeComplete = m_needUpdatePatchesInfos[j].Files.Remove(matchedItem);
+                            if (removeComplete)
+                                Debug.Log(string.Format("Found a asset with the same name ({0}) in an older version. [REMOVE] :{1}", latestVersionFile.Name, removeComplete.ToString()));
+                        }
+                    }
+                }
+
+                int fileCount = m_needUpdatePatchesInfos.Sum(i => i.Files.Count);
                 float delta = 1f / fileCount;
 
                 if (checkZip)
                     yield return ReadUnpackMd5File();
-                if (null != m_currentPatches.Files && fileCount > 0)
+
+                if (null != m_needUpdatePatchesInfos)
                 {
-                    int index = 0;
-                    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", m_currentPatches.Files.Count));
-                    foreach (Patch file in m_currentPatches.Files)
+                    var index = 0;
+                    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", fileCount));
+
+                    foreach (var patchesInfo in m_needUpdatePatchesInfos)
                     {
-                        Patch patch = file;
-                        Debug.Log("patch name :" + patch.Name);
-                        AddDownLoadList(patch, checkZip, GetZipPatchFileMd5(patch));
-                        OnAddDownLoadListProgressUpdate((index + 1) * delta);
-                        yield return WaitProgressAdd(0.02f);
-                        ++index;
-                        patch = null;
+                        foreach (var file in patchesInfo.Files)
+                        {
+                            Debug.Log("Create download task, File name :" + file.Name);
+                            AddDownLoadList(file, checkZip, GetZipPatchFileMd5(file));
+                            OnAddDownLoadListProgressUpdate((index + 1) * delta);
+                            yield return WaitProgressAdd(0.02f);
+                            ++index;
+                        }
                     }
                 }
+
+                //if (null != m_currentPatches.Files && fileCount > 0)
+                //{
+                //    int index = 0;
+                //    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", m_currentPatches.Files.Count));
+                //    foreach (Patch file in m_currentPatches.Files)
+                //    {
+                //        Patch patch = file;
+                //        Debug.Log("patch name :" + patch.Name);
+                //        AddDownLoadList(patch, checkZip, GetZipPatchFileMd5(patch));
+                //        OnAddDownLoadListProgressUpdate((index + 1) * delta);
+                //        yield return WaitProgressAdd(0.02f);
+                //        ++index;
+                //        patch = null;
+                //    }
+                //}
             }
 #endif
         }
@@ -635,23 +780,25 @@ namespace Esp.Core.VersionCheck
         {
 #if XML
             string checkFilePath = m_downLoadPath + "/UnpackMd5_" + CurVersion + "_" + CurrentPatches.Version + ".xml";
-#elif JSON
-            string checkFilePath = m_downLoadPath + "/UnpackMd5_" + CurVersion + "_" + CurrentPatches.Version + ".json";
-#endif
             Debug.Log("checkFilePath :" + checkFilePath);
             yield return ReadUnpackMd5Inifo(m_currentPatches.Files[0].Url, checkFilePath);
-
-#if XML
             m_zipMd5Data = BinarySerializeOpt.XmlDeserialize(checkFilePath, typeof(ZipMd5Data)) as ZipMd5Data;
+
 #elif JSON
-            StreamReader sr = new StreamReader(checkFilePath);
-            var content = sr.ReadToEnd();
-            m_zipMd5Data = new UnpackMd5InfoDataModule(JsonMapper.ToObject(content));
-            sr.Close();
+            m_zipMd5Data = new UnpackMd5InfoDataModule();
+            foreach (Patches patches in m_needUpdatePatchesInfos)
+            {
+                string checkFilePath = m_downLoadPath + "/UnpackMd5_" + CurVersion + "_" + patches.Version + ".json";
+                Debug.Log("checkFilePath :" + checkFilePath);
+                yield return ReadUnpackMd5Inifo(patches.Files[0].Url, checkFilePath);
+                StreamReader sr = new StreamReader(checkFilePath);
+                var content = sr.ReadToEnd();
+                var zipMd5DataCache = new UnpackMd5InfoDataModule(JsonMapper.ToObject(content));
+                m_zipMd5Data.ZipMd5List = m_zipMd5Data.ZipMd5List.Concat(zipMd5DataCache.ZipMd5List).ToList();
+                sr.Close();
+            }
 #endif
             yield return null;
-
-
         }
 
         private List<ZipBase> GetZipPatchFileMd5(Patch patch)
@@ -814,7 +961,7 @@ namespace Esp.Core.VersionCheck
                     LoadOver();
                 Debug.Log((object)"LoadOver 检查完毕，文件完整！");
             }
-            else if (m_tryDownCount >= 2)
+            else if (m_tryDownCount >= DOWNLOADCOUNT)
             {
                 string allName = "";
                 StartDownload = false;

@@ -55,6 +55,9 @@ namespace Esp.VersionCheck.DataModule.Json
             {
                 PatchInfos.Add(new Patches(item));
             }
+
+            // 对每个大版本热更的小更新进行重新排序
+            PatchInfos = PatchInfos.OrderBy(i => int.Parse(i.Version)).ToList();
         }
     }
 
