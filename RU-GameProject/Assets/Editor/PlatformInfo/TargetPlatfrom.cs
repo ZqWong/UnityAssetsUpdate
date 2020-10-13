@@ -35,10 +35,10 @@ public class TargetPlatform : ScriptableObject
                 ret = BuildTarget.StandaloneWindows64;
                 break;
             case Platform.Android:
-                ret = BuildTarget.iOS;
+                ret = BuildTarget.Android;
                 break;
             case Platform.iOS:
-                ret = BuildTarget.Android;
+                ret = BuildTarget.iOS;
                 break;
         }
         return ret;

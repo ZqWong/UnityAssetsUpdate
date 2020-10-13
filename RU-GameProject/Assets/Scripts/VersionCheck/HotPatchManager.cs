@@ -130,7 +130,6 @@ namespace Esp.Core.VersionCheck
         private ZipMd5Data m_zipMd5Data;
 #endif
 
-
         /// <summary>
         /// All download file name and its MD5 value dic
         /// </summary>
@@ -175,7 +174,6 @@ namespace Esp.Core.VersionCheck
         {
             get { return m_curVersion; }
         }
-
 
         public DownLoadFileItem CurrentDownLoadFileItem
         {
@@ -576,9 +574,6 @@ namespace Esp.Core.VersionCheck
                 return;
 
             //TODO :只获取了最后一个版本的更新信息, 应该与当前版本做匹配去中间所有未更新的版本信息
-            //OPTION 1 : 以Version进行排序, 在针对同名文件进行低版本剔除,避免二次下载,做保留最新的版本, 但是需要注意的是包的内容要进行把控,只更新不减资源.
-            //OPTION 2 : 依次更新各个中间版本, 要对本地版本文件进行处理.
-
 
             var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.Skip(m_localVersionIndex).ToList();
 
@@ -623,15 +618,6 @@ namespace Esp.Core.VersionCheck
                     }
                 }
             }
-
-            //var patchInfo = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
-            //if (null != patchInfo && null != patchInfo.Files)
-            //{
-            //    foreach (var file in patchInfo.Files)
-            //    {
-            //        m_hmrDic.Add(file.Name, file);
-            //    }
-            //}
 #elif XML
             // Xml
             if (m_gameVersion == null || m_gameVersion.Patches == null || m_gameVersion.Patches.Length <= 0U)
@@ -656,7 +642,6 @@ namespace Esp.Core.VersionCheck
             m_downLoadDic.Clear();
             m_downLoadMD5Dic.Clear();
             m_versionCheckProgress = 0.0f;
-
 
 #if XML
             if (m_gameVersion != null && m_gameVersion.Patches != null && m_gameVersion.Patches.Length > 0U)
@@ -688,30 +673,6 @@ namespace Esp.Core.VersionCheck
 #elif JSON
             if (null != m_currentGameVersionInfo && null != m_currentGameVersionInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count > 0)
             {
-                //m_currentPatches = m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1];
-                //int fileCount = m_currentPatches.Files.Count;
-                //float delta = 1f / fileCount;
-
-                //if (checkZip)
-                //    yield return ReadUnpackMd5File();
-                //if (null != m_currentPatches.Files && fileCount > 0)
-                //{
-                //    int index = 0;
-                //    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", m_currentPatches.Files.Count));
-                //    foreach (Patch file in m_currentPatches.Files)
-                //    {
-                //        Patch patch = file;
-                //        Debug.Log("patch name :" + patch.Name);
-                //        AddDownLoadList(patch, checkZip, GetZipPatchFileMd5(patch));
-                //        OnAddDownLoadListProgressUpdate((index + 1) * delta);
-                //        yield return WaitProgressAdd(0.02f);
-                //        ++index;
-                //        patch = null;
-                //    }
-                //}
-
-                //=--=-=-=-=-=-=-=-=-
-
                 m_needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.Skip(m_localVersionIndex).ToList();
 
                 //var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.GetRange(m_localVersionIndex,
@@ -756,22 +717,6 @@ namespace Esp.Core.VersionCheck
                         }
                     }
                 }
-
-                //if (null != m_currentPatches.Files && fileCount > 0)
-                //{
-                //    int index = 0;
-                //    Debug.Log(string.Format("<color=green>当前更新包需要检查{0}个文件包</color>", m_currentPatches.Files.Count));
-                //    foreach (Patch file in m_currentPatches.Files)
-                //    {
-                //        Patch patch = file;
-                //        Debug.Log("patch name :" + patch.Name);
-                //        AddDownLoadList(patch, checkZip, GetZipPatchFileMd5(patch));
-                //        OnAddDownLoadListProgressUpdate((index + 1) * delta);
-                //        yield return WaitProgressAdd(0.02f);
-                //        ++index;
-                //        patch = null;
-                //    }
-                //}
             }
 #endif
         }
