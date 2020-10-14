@@ -11,6 +11,7 @@ using UnityEngine.Networking;
 #if JSON
 using LitJson;
 using Esp.VersionCheck.DataModule.Json;
+using Esp.VersionCheck.LocalVersionInfo;
 
 #elif XML
 using Esp.VersionCheck.DataModule.Xml;
@@ -63,6 +64,11 @@ namespace Esp.Core.VersionCheck
         /// (Local) 本地对应热更版本的资源版本号 LocalVersion.json -> GameVersion(matched) -> Version
         /// </summary>
         private string m_localVersion = "0";
+
+        /// <summary>
+        /// (Server) 应该更新到的版本
+        /// </summary>
+        private string m_targetVersion = "0";
 
         /// <summary>
         /// (Local) 本地与服务器更新列表中,当前资源版本序号;
@@ -353,6 +359,7 @@ namespace Esp.Core.VersionCheck
             m_targetVersionCheckProgress = 1f;
             if (null != versionCheckConfirmHandler)
             {
+                LocalVersionInfoManager.Instance.UpdateVersionInfo(m_curVersion, m_branchName, m_targetVersion);
                 versionCheckConfirmHandler.Invoke(m_downLoadList.Count > 0);
             }
         }
@@ -364,41 +371,64 @@ namespace Esp.Core.VersionCheck
         private bool CheckLocalAndServerPatch()
         {
 #if JSON
-            if (!File.Exists(m_localJsonPath))
-                return true;
-            
-            // 读取本地版本信息
-            StreamReader sr = new StreamReader(m_localJsonPath);
-            var content = sr.ReadToEnd();
-            m_localInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
-            sr.Close();
-
-            // 匹配与当前APP Version所匹配的资源信息
-            //GameVersionInfo matchInfo = null;
+            //if (!File.Exists(m_localJsonPath))
+            //    return true;
 
             Branches branch = null;
 
-            if (null != m_localInfoDataModule)
+            var branches = m_serverInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
+            Debug.Assert(null != branches, "未找到与当前App Version 所匹配的更新信息 : App Version " + m_curVersion);
+
+            branch = branches.Branches.FirstOrDefault(i => i.BranchName == m_branchName);
+            Debug.Assert(null != branches, "未找到与当前Branch Name 所匹配的更新信息 : Branch Name " + m_branchName);
+
+
+            var assetVersion = LocalVersionInfoManager.Instance.GetVersionInfo(m_curVersion, m_branchName);
+            if (null != assetVersion && "" != assetVersion)
             {
-                var info = m_localInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
-                if (null != info)
-                {
-                    // 获取当前本地资源版本
+                // 获取与本地版本相匹配的版本序号
+                var localPatch = branch.Patches.FirstOrDefault(i => i.Version == assetVersion);
+                m_localVersionIndex = branch.Patches.IndexOf(localPatch) + 1;
+                m_localVersion = branch.Patches[m_localVersionIndex - 1].Version;
+                
+                Debug.Log("当前本地资源版本 : " + m_localVersion);
+            }
 
-                    branch = info.Branches.FirstOrDefault(i => i.BranchName == m_branchName);
+            m_targetVersion = branch.Patches[m_currentBranch.Patches.Count - 1].Version;
 
-
-                    m_localVersionIndex = branch.Patches.Count;
-                    m_localVersion = branch.Patches[m_localVersionIndex - 1].Version;
-                    Debug.Log("当前本地资源版本 : " + m_localVersion);
-                }                
-	        }
-
-            // 与服务端对应的APP Version相关信息进行比对, 如果当前的热更好与服务器端最新的一样就返回true;
-            return null != branch &&
+            return "" != assetVersion &&
                    null != m_currentBranch.Patches &&
-                   (null != branch.Patches && m_currentBranch.Patches.Count != 0) &&
-                   m_currentBranch.Patches[m_currentBranch.Patches.Count - 1].Version != m_localVersion;
+                   assetVersion != m_currentBranch.Patches[m_currentBranch.Patches.Count - 1].Version;
+
+         //   // 读取本地版本信息
+         //   StreamReader sr = new StreamReader(m_localJsonPath);
+         //   var content = sr.ReadToEnd();
+         //   m_localInfoDataModule = new ServerInfoDataModule(JsonMapper.ToObject(content));
+         //   sr.Close();
+
+         //   // 匹配与当前APP Version所匹配的资源信息
+         //   //GameVersionInfo matchInfo = null;
+         //   if (null != m_localInfoDataModule)
+         //   {
+         //       var info = m_localInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
+         //       if (null != info)
+         //       {
+         //           // 获取当前本地资源版本
+
+         //           branch = info.Branches.FirstOrDefault(i => i.BranchName == m_branchName);
+
+
+         //           m_localVersionIndex = branch.Patches.Count;
+         //           m_localVersion = branch.Patches[m_localVersionIndex - 1].Version;
+         //           Debug.Log("当前本地资源版本 : " + m_localVersion);
+         //       }                
+	        //}
+
+         //   // 与服务端对应的APP Version相关信息进行比对, 如果当前的热更好与服务器端最新的一样就返回true;
+         //   return null != branch &&
+         //          null != m_currentBranch.Patches &&
+         //          (null != branch.Patches && m_currentBranch.Patches.Count != 0) &&
+         //          m_currentBranch.Patches[m_currentBranch.Patches.Count - 1].Version != m_localVersion;
 #elif XML
             if (!File.Exists(m_localXmlPath))
                 return true;
@@ -693,7 +723,7 @@ namespace Esp.Core.VersionCheck
             if (null != m_currentBranch && null != m_currentBranch.Patches && m_currentBranch.Patches.Count > 0)
             {
                 m_needUpdatePatchesInfos = m_currentBranch.Patches.Skip(m_localVersionIndex).ToList();
-
+                m_needUpdatePatchesInfos = m_needUpdatePatchesInfos.OrderBy(i => i.Version).ToList();
                 //var needUpdatePatchesInfos = m_currentBranch.PatchInfos.GetRange(m_localVersionIndex,
                 //    m_currentBranch.PatchInfos.Count);
 
@@ -701,11 +731,12 @@ namespace Esp.Core.VersionCheck
                 {
                     foreach (var latestVersionFile in m_needUpdatePatchesInfos[i].Files)
                     {
-                        for (int j = m_needUpdatePatchesInfos.Count - i - 1; j >= 0; j--)
+                        for (int j = i - 1; j >= 0; j--)
                         {
                             var matchedItem = m_needUpdatePatchesInfos[j].Files.FirstOrDefault(item =>
                                 item.Name == latestVersionFile.Name &&
                                 item.Platform == latestVersionFile.Platform);
+
                             var removeComplete = m_needUpdatePatchesInfos[j].Files.Remove(matchedItem);
                             if (removeComplete)
                                 Debug.Log(string.Format("Found a asset with the same name ({0}) in an older version. [REMOVE] :{1}", latestVersionFile.Name, removeComplete.ToString()));
@@ -754,12 +785,15 @@ namespace Esp.Core.VersionCheck
             {
                 string checkFilePath = m_downLoadPath + "/UnpackMd5_" + CurVersion + "_" + patches.Version + ".json";
                 Debug.Log("checkFilePath :" + checkFilePath);
-                yield return ReadUnpackMd5Inifo(patches.Files[0].Url, checkFilePath);
-                StreamReader sr = new StreamReader(checkFilePath);
-                var content = sr.ReadToEnd();
-                var zipMd5DataCache = new UnpackMd5InfoDataModule(JsonMapper.ToObject(content));
-                m_zipMd5Data.ZipMd5List = m_zipMd5Data.ZipMd5List.Concat(zipMd5DataCache.ZipMd5List).ToList();
-                sr.Close();
+                //if (patches.Files[0].Name.StartsWith("UnpackMd5_"))
+                //{
+                    yield return ReadUnpackMd5Inifo(patches.Files[0].Url, checkFilePath);
+                    StreamReader sr = new StreamReader(checkFilePath);
+                    var content = sr.ReadToEnd();
+                    var zipMd5DataCache = new UnpackMd5InfoDataModule(JsonMapper.ToObject(content));
+                    m_zipMd5Data.ZipMd5List = m_zipMd5Data.ZipMd5List.Concat(zipMd5DataCache.ZipMd5List).ToList();
+                    sr.Close();
+                //}
             }
 #endif
             yield return null;

@@ -450,6 +450,9 @@ public class CreateAssetBundle : MonoBehaviour
         patches.Version = hotCount;
         patches.Des = des;
 #endif
+        var remotePlatformBasePath =
+            Path.Combine(PlatformInfoManager.GetServerUrl(), PlatformInfoManager.GetCurrentPlatformPath());
+
         ////unpack.bytes////
         FileInfo unpackFileInfo = new FileInfo(bundleUnPackMd5Path);
         string RelativePath = GetDirRelativePath(unpackFileInfo.DirectoryName, PlatformInfoManager.GetBranchName());
@@ -459,23 +462,26 @@ public class CreateAssetBundle : MonoBehaviour
 
         if (unpackFileInfoExtend.RelativePath == "")
         {
-            unpackHotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/"+ hotCount;
+            unpackHotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/" +
+                           hotCount;
         }
         else
         {
-            unpackHotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/"+ hotCount + "/" + unpackFileInfoExtend.RelativePath;
+            unpackHotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/" +
+                           hotCount + "/" + unpackFileInfoExtend.RelativePath;
         }
 
         Debug.Log("unpackHotDic :" + unpackHotDic);
 
-        string dest = HOT_OUT_PATH + "/" + unpackHotDic +"/" + unpackFileInfoExtend.FileInfo.Name;
+        string dest = HOT_OUT_PATH + "/" + unpackHotDic + "/" + unpackFileInfoExtend.FileInfo.Name;
 
         if (!Directory.Exists(HOT_OUT_PATH + "/" + unpackHotDic))
         {
             Directory.CreateDirectory(HOT_OUT_PATH + "/" + unpackHotDic);
         }
 
-        Debug.Log("unpackFileInfoExtend.FileInfo.FullName " + unpackFileInfoExtend.FileInfo.FullName + "dest :" + dest);
+        Debug.Log("unpackFileInfoExtend.FileInfo.FullName " + unpackFileInfoExtend.FileInfo.FullName + "dest :" +
+                  dest);
 
         File.Copy(sourceFileName: unpackFileInfoExtend.FileInfo.FullName, destFileName: dest);
 
@@ -483,19 +489,19 @@ public class CreateAssetBundle : MonoBehaviour
         unpackPatch.Md5 = MD5Manager.Instance.BuildFileMd5(dest);
         unpackPatch.Name = unpackFileInfoExtend.FileInfo.Name;
 #if XML
-        unpackPatch.Size = unpackFileInfoExtend.FileInfo.Length / 1024.0f;
+    unpackPatch.Size = unpackFileInfoExtend.FileInfo.Length / 1024.0f;
 #elif JSON
         unpackPatch.Size = (unpackFileInfoExtend.FileInfo.Length / 1024.0f).ToString();
 #endif
         unpackPatch.Platform = PlatformInfoManager.GetCurrentPlatformPath();
 
-        var remotePlatformBasePath =
-            Path.Combine(PlatformInfoManager.GetServerUrl(), PlatformInfoManager.GetCurrentPlatformPath());
         var localUnpackPath = Path.Combine(unpackHotDic, unpackFileInfoExtend.FileInfo.Name);
-        unpackPatch.Url = Path.Combine(remotePlatformBasePath, localUnpackPath).Replace("\\", "/"); ;
+        unpackPatch.Url = Path.Combine(remotePlatformBasePath, localUnpackPath).Replace("\\", "/");
+        ;
         patches.Files.Add(unpackPatch);
 
         File.Delete(unpackFileInfoExtend.FileInfo.FullName);
+        
         ///////////////////
 
         for (int i = 0; i < changeList.Count; i++)

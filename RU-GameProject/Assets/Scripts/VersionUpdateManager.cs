@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 using System.IO;
+using Esp.VersionCheck.LocalVersionInfo;
 
 public class VersionUpdateManager : MonoBehaviour
 {
@@ -24,6 +25,8 @@ public class VersionUpdateManager : MonoBehaviour
 
     public void Start()
     {
+        LocalVersionInfoManager.Instance.Initialize();
+
         //StaticJsonManager.Instance.Initialize();
         //Initialize(() => { Debug.LogError("Download complete"); });
         ////  Initialize(() => { Debug.LogError("Download complete"); });
