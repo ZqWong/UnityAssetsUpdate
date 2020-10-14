@@ -5,20 +5,24 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using Esp.VersionCheck.DataModule.Json;
+using Esp.VersionCheck.LocalVersionInfo;
 using LitJson;
 
 public class VersionTxtManager
 {
-    public static string VersionTxtName = "Version.txt";
-    public static string VersionJsonFileName = "Version.json";
+    //private static string VersionTxtName = "AppVersion.txt";
+    private static string VersionJsonFileName = "AppVersion.json";
+    private static string s_resourceVersionFileName = "ResourcesVersion.json";
 
-    [MenuItem("Tools/VersionManager/Create Version Txt")]
-    public static void WriteVersion()
+    private static string s_filePath = Application.streamingAssetsPath + "/LocalVersion";
+
+    [MenuItem("Tools/VersionManager/Create APP Version File")]
+    public static void WriteAppVersion()
     {
-        SaveVersion(PlayerSettings.bundleVersion, PlayerSettings.applicationIdentifier);
+        SaveAppVersion(PlayerSettings.bundleVersion, PlayerSettings.applicationIdentifier);
     }
 
-    static void SaveVersion(string version, string package)
+    static void SaveAppVersion(string version, string package)
     {
 #if JSON
         VersionInfoDataModule data = new VersionInfoDataModule();
@@ -26,19 +30,18 @@ public class VersionTxtManager
         data.PackageName = PlayerSettings.applicationIdentifier;
         var content = JsonMapper.ToJson(data);
         
-        var path = Application.streamingAssetsPath + "/LocalVersion";
-        if (!Directory.Exists(path))
+        if (!Directory.Exists(s_filePath))
         {
-            Directory.CreateDirectory(path);
+            Directory.CreateDirectory(s_filePath);
         }
-        var fullPath = Path.Combine(path, VersionJsonFileName);
+        var fullPath = Path.Combine(s_filePath, VersionJsonFileName);
         if (File.Exists(fullPath))
         {
             File.Delete(fullPath);
         }
         File.WriteAllText(fullPath, content, Encoding.UTF8);
 
-        Debug.Log("<color=yellow>" + "写入版本信息：" + content + "\nfullPath : "+ fullPath + "</color>");
+        Debug.Log("<color=yellow>" + "写入App版本信息：" + content + "\nfullPath : "+ fullPath + "</color>");
 
 #elif XML
         string content = "Version|" + version + ";PackageName|" + package + ";";
@@ -76,4 +79,28 @@ public class VersionTxtManager
         }
 #endif
     }
+
+    [MenuItem("Tools/VersionManager/Create Resources Version File")]
+    static void WriteResourceVersion()
+    {
+        ItemData LocalVersionInfoData = new ItemData();
+
+        //List<LocalVersionInfoDataModule> LocalVersionInfoData = new List<LocalVersionInfoDataModule>();
+        //LocalVersionInfoData.Add(new LocalVersionInfoDataModule());
+        var content = JsonMapper.ToJson(LocalVersionInfoData);
+
+        if (!Directory.Exists(s_filePath))
+        {
+            Directory.CreateDirectory(s_filePath);
+        }
+        var fullPath = Path.Combine(s_filePath, s_resourceVersionFileName);
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
+        File.WriteAllText(fullPath, content, Encoding.UTF8);
+
+        Debug.Log("<color=yellow>" + "写入资源版本信息：" + content + "\nfullPath : " + fullPath + "</color>");
+    }
+
 }

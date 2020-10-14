@@ -22,7 +22,7 @@ namespace Esp.Core.VersionCheck
 {
     public class HotPatchManager : Singleton<HotPatchManager>
     {
-        private readonly string LOCAL_VERSION_INFO_FILE_PATH = Application.streamingAssetsPath + "/LocalVersion/Version.json";
+        private readonly string LOCAL_VERSION_INFO_FILE_PATH = Application.streamingAssetsPath + "/LocalVersion/AppVersion.json";
 
         private MonoBehaviour m_mono;
         private string m_unPackPath = Application.persistentDataPath + "/Origin";

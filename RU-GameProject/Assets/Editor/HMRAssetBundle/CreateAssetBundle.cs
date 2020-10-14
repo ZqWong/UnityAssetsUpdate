@@ -398,8 +398,8 @@ public class CreateAssetBundle : MonoBehaviour
             Clear_Directors(EXTRACT_ZIP_CACHE_PATH);
         }
 
-        DirectoryInfo di = new DirectoryInfo(ASSET_BUNDLE_FILE_SAVE_LOCATION);
-        FileInfo[] fiA = di.GetFiles(); //获得了所有起始目录下的文件
+        //DirectoryInfo di = new DirectoryInfo(ASSET_BUNDLE_FILE_SAVE_LOCATION);
+        //FileInfo[] fiA = di.GetFiles(); //获得了所有起始目录下的文件
 
         for (int i = 0; i < changeList.Count; i++)
         {
