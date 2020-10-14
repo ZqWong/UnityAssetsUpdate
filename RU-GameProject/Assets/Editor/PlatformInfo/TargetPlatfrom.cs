@@ -13,6 +13,16 @@ public class TargetPlatform : ScriptableObject
 
     public Platform m_Platform;
 
+    [SerializeField] private string m_branchName;
+    public string BranchName
+    {
+        get
+        {
+            Debug.Assert(null != m_branchName, "Get branch name failed.");
+            return m_branchName;
+        }
+    }
+
     public string GetCurrentPlatformPath()
     {
         foreach (var item in m_PlatformNamePath)

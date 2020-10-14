@@ -15,4 +15,5 @@ MonoBehaviour:
   - PlatformName: PC
     Path: PC
   m_Platform: 0
+  m_branchName: Elevator
   ServerUrl: http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ

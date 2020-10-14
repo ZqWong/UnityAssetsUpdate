@@ -23,9 +23,9 @@ public class JsonOrderedTest : MonoBehaviour
         sr.Close();
 
         // 将重新排序的数组重新赋值给datamodule， 且排序时应该是对int类型就行排序，否则执行的是字符串的默认排序
-        m_localInfoDataModule.GameVersionInfos[0].PatchInfos = m_localInfoDataModule.GameVersionInfos[0].PatchInfos.OrderBy(i => int.Parse(i.Version)).ToList();
+        m_localInfoDataModule.GameVersionInfos[0].Branches[0].Patches = m_localInfoDataModule.GameVersionInfos[0].Branches[0].Patches.OrderBy(i => int.Parse(i.Version)).ToList();
 
-        foreach (var item in m_localInfoDataModule.GameVersionInfos[0].PatchInfos)
+        foreach (var item in m_localInfoDataModule.GameVersionInfos[0].Branches[0].Patches)
         {
             Debug.Log("Item :" + item.Version);
         }

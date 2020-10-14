@@ -25,10 +25,17 @@ using Patches = Esp.VersionCheck.DataModule.Xml.Patches;
 
 public class CreateAssetBundle : MonoBehaviour
 {
-    private static string ASSET_BUNDLE_FILE_SAVE_LOCATION = Application.dataPath + "/../out/AssetBundle/" + PlatformInfoManager.GetCurrentPlatformPath();
-    private static string EXTRACT_ZIP_CACHE_PATH = Application.dataPath + "/../out/ZipCache";
-    private static string VERSION_MD5_PATH = Application.dataPath + "/../out/Version/" + PlatformInfoManager.GetCurrentPlatformPath();
-    private static string HOT_OUT_PATH = Application.dataPath + "/../out/Hot/" + PlatformInfoManager.GetCurrentPlatformPath();
+    //private static string ASSET_BUNDLE_FILE_SAVE_LOCATION = Application.dataPath + "/../out/AssetBundle/" + PlatformInfoManager.GetCurrentPlatformPath();
+    private static string ASSET_BUNDLE_FILE_SAVE_LOCATION = string.Format("{0}/../out/AssetBundle/{1}/{2}",Application.dataPath, PlatformInfoManager.GetCurrentPlatformPath(), PlatformInfoManager.GetBranchName());
+
+    //private static string EXTRACT_ZIP_CACHE_PATH = Application.dataPath + "/../out/ZipCache";
+    private static string EXTRACT_ZIP_CACHE_PATH = string.Format("{0}/../out/ZipCache/{1}", Application.dataPath, PlatformInfoManager.GetBranchName());
+
+    //private static string VERSION_MD5_PATH = Application.dataPath + "/../out/Version/" + PlatformInfoManager.GetCurrentPlatformPath();
+    private static string VERSION_MD5_PATH = string.Format("{0}/../out/Version/{1}/{2}", Application.dataPath, PlatformInfoManager.GetCurrentPlatformPath(), PlatformInfoManager.GetBranchName());
+
+    //private static string HOT_OUT_PATH = Application.dataPath + "/../out/Hot/" + PlatformInfoManager.GetCurrentPlatformPath();
+    private static string HOT_OUT_PATH = string.Format("{0}/../out/Hot/{1}", Application.dataPath, PlatformInfoManager.GetCurrentPlatformPath());
 
     //储存读出来MD5信息
     private static Dictionary<string, AssetBase> m_PackedMd5 = new Dictionary<string, AssetBase>();
@@ -261,7 +268,7 @@ public class CreateAssetBundle : MonoBehaviour
                 if (!m_PackedMd5.ContainsKey(name))
                 {
                     // 获取新增更新的文件
-                    string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
+                    string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetBranchName());
                     changeList.Add(new FileInfoExtend(files[i], RelativePath));
                     Debug.Log("<color=yellow>" + "发现新增热更文件 ： " + name + "</color>");
                 }
@@ -273,7 +280,7 @@ public class CreateAssetBundle : MonoBehaviour
                         // 获取需要有修改的文件
                         if (md5 != assetBase.Md5)
                         {
-                            string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
+                            string RelativePath = GetDirRelativePath(files[i].DirectoryName, PlatformInfoManager.GetBranchName());
 
                             changeList.Add(new FileInfoExtend(files[i], RelativePath));
                             Debug.Log("<color=yellow>" + "发现修改热更文件 ： " + name + "</color>");
@@ -436,24 +443,30 @@ public class CreateAssetBundle : MonoBehaviour
         patches.Files = new List<Patch>();
 
 #elif JSON
+        Branches branches = new Branches();
+        branches.BranchName = PlatformInfoManager.GetBranchName();
+
         Patches patches = new Patches();
         patches.Version = hotCount;
         patches.Des = des;
 #endif
         ////unpack.bytes////
         FileInfo unpackFileInfo = new FileInfo(bundleUnPackMd5Path);
-        string RelativePath = GetDirRelativePath(unpackFileInfo.DirectoryName, PlatformInfoManager.GetCurrentPlatformPath());
+        string RelativePath = GetDirRelativePath(unpackFileInfo.DirectoryName, PlatformInfoManager.GetBranchName());
+        Debug.Log("RelativePath :" + RelativePath);
         FileInfoExtend unpackFileInfoExtend = new FileInfoExtend(unpackFileInfo, RelativePath);
         string unpackHotDic = "";
 
         if (unpackFileInfoExtend.RelativePath == "")
         {
-            unpackHotDic = PlayerSettings.bundleVersion + "/" + hotCount;
+            unpackHotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/"+ hotCount;
         }
         else
         {
-            unpackHotDic = PlayerSettings.bundleVersion + "/" + hotCount + "/" + unpackFileInfoExtend.RelativePath;
+            unpackHotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/"+ hotCount + "/" + unpackFileInfoExtend.RelativePath;
         }
+
+        Debug.Log("unpackHotDic :" + unpackHotDic);
 
         string dest = HOT_OUT_PATH + "/" + unpackHotDic +"/" + unpackFileInfoExtend.FileInfo.Name;
 
@@ -461,9 +474,10 @@ public class CreateAssetBundle : MonoBehaviour
         {
             Directory.CreateDirectory(HOT_OUT_PATH + "/" + unpackHotDic);
         }
+
+        Debug.Log("unpackFileInfoExtend.FileInfo.FullName " + unpackFileInfoExtend.FileInfo.FullName + "dest :" + dest);
+
         File.Copy(sourceFileName: unpackFileInfoExtend.FileInfo.FullName, destFileName: dest);
-
-
 
         Patch unpackPatch = new Patch();
         unpackPatch.Md5 = MD5Manager.Instance.BuildFileMd5(dest);
@@ -493,11 +507,11 @@ public class CreateAssetBundle : MonoBehaviour
                 string hotDic = "";
                 if (changeList[i].RelativePath == "")
                 {
-                    hotDic = PlayerSettings.bundleVersion + "/" + hotCount;
+                    hotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/" + hotCount;
                 }
                 else
                 {
-                    hotDic = PlayerSettings.bundleVersion + "/" + hotCount + "/" + changeList[i].RelativePath;
+                    hotDic = PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/" + hotCount + "/" + changeList[i].RelativePath;
                 }
 
                 if (!Directory.Exists(HOT_OUT_PATH + "/" + hotDic))
@@ -509,6 +523,7 @@ public class CreateAssetBundle : MonoBehaviour
                     File.Delete(HOT_OUT_PATH + "/" + hotDic + "/" + changeList[i].FileInfo.Name);
                 }
 
+                Debug.Log("changeList[i].FileInfo.FullName :" + changeList[i].FileInfo.FullName + "HOT_OUT_PATH : " + HOT_OUT_PATH + "/" + hotDic + "/" + changeList[i].FileInfo.Name);
                 File.Copy(sourceFileName: changeList[i].FileInfo.FullName, destFileName: HOT_OUT_PATH + "/" + hotDic + "/" + changeList[i].FileInfo.Name);
 
                 Patch patch = new Patch();
@@ -526,19 +541,19 @@ public class CreateAssetBundle : MonoBehaviour
                 patches.Files.Add(patch);
             }
         }
-
-
-
 #if XML
         string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.xml";
         BinarySerializeOpt.Xmlserialize(patchPath, patches);
+        Debug.Log("<color=yellow>"+"生成新的服务器配置表 ： " + patchPath + " </color>");
 #elif JSON
-        string patchPath = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + hotCount + "/Patch.json";
-        string jsonData = JsonMapper.ToJson(patches);
-        File.WriteAllText(patchPath, jsonData, Encoding.UTF8);
+        branches.Patches.Add(patches);
+        string branchInfo = HOT_OUT_PATH + "/" + PlayerSettings.bundleVersion + "/" + PlatformInfoManager.GetBranchName() + "/" + hotCount + "/BranchInfo.json";
+        string jsonData = JsonMapper.ToJson(branches);
+        File.WriteAllText(branchInfo, jsonData, Encoding.UTF8);
+        Debug.Log("<color=yellow>" + "生成新的服务器配置表 ： " + branchInfo + " </color>");
 #endif
         EditorUtility.ClearProgressBar();
-        Debug.Log("<color=yellow>"+"生成新的服务器配置表 ： " + patchPath + " </color>");
+       
     }
 #endregion
 }

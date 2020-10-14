@@ -19,7 +19,7 @@ public class VersionUpdateManager : MonoBehaviour
     private string xmlURLFormat
     {
         //GameManager.Instance.VersionXmlURL 配置 http://172.16.16.4:8080/resourcemgr2/Download/StructurePrinciple
-        get { return @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/{0}/ServerInfo.json"; }
+        get { return @"http://172.16.16.4:8080/resourcemgr2/Download/AssetDownloadTest_WZQ" + "/PC/ServerInfo.json";}
     }
 
     public void Start()
@@ -95,38 +95,43 @@ public class VersionUpdateManager : MonoBehaviour
         string m_DownLoadPath = "";
         string m_ServerXmlPath = "";
         string m_LocalXmlPath = "";
+        string m_branchName = "";
         string xmlURL = "";
         if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor)
         {
-            head = Application.persistentDataPath + "/AssetBundles/PC";
+            m_branchName = "Elevator";
+            head = Application.persistentDataPath + "/AssetBundles/PC/" + m_branchName;
             m_UnPackPath = head;
             m_DownLoadPath = head;
             m_ServerXmlPath = head + "/ServerInfo.json";
             m_LocalXmlPath = head + "/LocalInfo.json";
-            xmlURL = String.Format(xmlURLFormat, "PC");
+            xmlURL = String.Format(xmlURLFormat, "Elevator", "PC");
+          
         }
         else if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.WindowsEditor)
         {
-            head = Application.persistentDataPath + "/AssetBundles/Android";
+            head = Application.persistentDataPath + "/AssetBundles/Android/" + m_branchName;
             m_UnPackPath = head;
             m_DownLoadPath = head;
             m_ServerXmlPath = head + "/ServerInfo.xml";
             m_LocalXmlPath = head + "/LocalInfo.xml";
-            xmlURL = String.Format(xmlURLFormat, "Android");
+            xmlURL = String.Format(xmlURLFormat, "Elevator", "Android");
+            m_branchName = "Elevator";
         }
         else if (Application.platform == RuntimePlatform.IPhonePlayer || Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.WindowsEditor)
         {
-            head = Application.persistentDataPath + "/AssetBundles/IOS";
+            head = Application.persistentDataPath + "/AssetBundles/IOS/" + m_branchName;
             m_UnPackPath = head;
             m_DownLoadPath = head;
             m_ServerXmlPath = head + "/ServerInfo.json";
             m_LocalXmlPath = head + "/LocalInfo.json";
-            xmlURL = String.Format(xmlURLFormat, "PC");
+            xmlURL = String.Format(xmlURLFormat, "Elevator", "PC");
+            m_branchName = "Elevator";
         }
 
         localAssetPath = head;
 
-        HotPatchManager.Instance.Initialize(this, xmlURL, CheckVersionCallback, m_UnPackPath, m_DownLoadPath,
+        HotPatchManager.Instance.Initialize(this, xmlURL, m_branchName, CheckVersionCallback, m_UnPackPath, m_DownLoadPath,
             m_ServerXmlPath, m_LocalXmlPath, OnDownloadProgressUpdate);
     }
 

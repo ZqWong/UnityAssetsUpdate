@@ -28,6 +28,12 @@ public class PlatformInfoManager : MonoBehaviour
         return targetPlatformConfig.ServerUrl;
     }
 
+    public static string GetBranchName()
+    {
+        TargetPlatform targetPlatformConfig = AssetDatabase.LoadAssetAtPath<TargetPlatform>(TARGET_PLATFORM_CONFIG_PATH);
+        return targetPlatformConfig.BranchName;
+    }
+
     /// <summary>
     /// Get current platform asset bundle build target by asset
     /// </summary>

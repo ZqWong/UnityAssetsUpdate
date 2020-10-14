@@ -70,9 +70,9 @@ namespace Esp.Core.VersionCheck
         private int m_localVersionIndex = 0;
 
         /// <summary>
-        /// (Server) 当前APP Version 所对应的所有更新信息
+        /// (Server) 当前APP Version 与 Branch 所对应的所有更新信息
         /// </summary>
-        private GameVersionInfo m_currentGameVersionInfo;
+        private Branches m_currentBranch;
 
         /// <summary>
         /// JSON 模式弃用的,请使用 m_needUpdatePatchesInfos 代替;
@@ -131,6 +131,11 @@ namespace Esp.Core.VersionCheck
 #endif
 
         /// <summary>
+        /// Current branch name;
+        /// </summary>
+        private string m_branchName;
+
+        /// <summary>
         /// All download file name and its MD5 value dic
         /// </summary>
         private Dictionary<string, string> m_downLoadMD5Dic = new Dictionary<string, string>();        
@@ -184,9 +189,9 @@ namespace Esp.Core.VersionCheck
         public int LoadFileCount { get; set; }
         // 需要下载资源的总大小 KB
         public float LoadSumSize { get; set; }
-        //解压文件总大小
+        // 解压文件总大小
         public float UnPackSumSize { get; set; }
-        //已解压大小
+        // 已解压大小
         public float AlreadyUnPackSize { get; set; }
 
         private void ChangeProgressSlider(string info, float progress)
@@ -201,6 +206,7 @@ namespace Esp.Core.VersionCheck
         /// </summary>
         /// <param name="mono">当前调用热更Mono脚本</param>
         /// <param name="remoteServerInfoUrl">资源服务器ServerInfo.json路径</param>
+        /// <param name="branchName">资源分支名</param>
         /// <param name="versionCheckConfirmHandler">确认进行热更按钮回调事件</param>
         /// <param name="unPackPath">文件加压路径</param>
         /// <param name="downLoadPath">文件下载路径</param>
@@ -211,6 +217,7 @@ namespace Esp.Core.VersionCheck
         public void Initialize(
           MonoBehaviour mono,
           string remoteServerInfoUrl,
+          string branchName,
           Action<bool> versionCheckConfirmHandler,
           string unPackPath = "",
           string downLoadPath = "",
@@ -220,6 +227,9 @@ namespace Esp.Core.VersionCheck
           Action<string> itemErrorHandler = null)
         {
             m_mono = mono;
+
+            m_branchName = branchName;
+
             m_unPackPath = !string.IsNullOrEmpty(unPackPath) ? unPackPath : Application.persistentDataPath + "/Origin";
             m_downLoadPath = !string.IsNullOrEmpty(downLoadPath) ? downLoadPath : Application.persistentDataPath + "/DownLoad";
 
@@ -272,7 +282,10 @@ namespace Esp.Core.VersionCheck
                     var matchedVersionInfo = m_serverInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
                     Debug.Assert(null != matchedVersionInfo, "Get matched server info failed");
                     if (null != matchedVersionInfo)
-                        m_currentGameVersionInfo = matchedVersionInfo;
+                    {
+                        var matchedBranch = matchedVersionInfo.Branches.FirstOrDefault(i => i.BranchName == m_branchName);
+                        m_currentBranch = matchedBranch;
+                    }
                     //GetHotAB();
                 }
             });
@@ -361,25 +374,31 @@ namespace Esp.Core.VersionCheck
             sr.Close();
 
             // 匹配与当前APP Version所匹配的资源信息
-            GameVersionInfo matchInfo = null;
+            //GameVersionInfo matchInfo = null;
+
+            Branches branch = null;
+
             if (null != m_localInfoDataModule)
             {
                 var info = m_localInfoDataModule.GameVersionInfos.FirstOrDefault(i => i.GameVersion == m_curVersion);
                 if (null != info)
                 {
                     // 获取当前本地资源版本
-                    matchInfo = info;
-                    m_localVersionIndex = matchInfo.PatchInfos.Count;
-                    m_localVersion = matchInfo.PatchInfos[m_localVersionIndex - 1].Version;
+
+                    branch = info.Branches.FirstOrDefault(i => i.BranchName == m_branchName);
+
+
+                    m_localVersionIndex = branch.Patches.Count;
+                    m_localVersion = branch.Patches[m_localVersionIndex - 1].Version;
                     Debug.Log("当前本地资源版本 : " + m_localVersion);
                 }                
 	        }
 
             // 与服务端对应的APP Version相关信息进行比对, 如果当前的热更好与服务器端最新的一样就返回true;
-            return null != matchInfo &&
-                   null != m_currentGameVersionInfo.PatchInfos &&
-                   (null != matchInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count != 0) &&
-                   m_currentGameVersionInfo.PatchInfos[m_currentGameVersionInfo.PatchInfos.Count - 1].Version != m_localVersion;
+            return null != branch &&
+                   null != m_currentBranch.Patches &&
+                   (null != branch.Patches && m_currentBranch.Patches.Count != 0) &&
+                   m_currentBranch.Patches[m_currentBranch.Patches.Count - 1].Version != m_localVersion;
 #elif XML
             if (!File.Exists(m_localXmlPath))
                 return true;
@@ -570,15 +589,15 @@ namespace Esp.Core.VersionCheck
         {
 #if JSON
             // Json
-            if (null == m_currentGameVersionInfo || null == m_currentGameVersionInfo.PatchInfos || m_currentGameVersionInfo.PatchInfos.Count <= 0)
+            if (null == m_currentBranch || null == m_currentBranch.Patches || m_currentBranch.Patches.Count <= 0)
                 return;
 
             //TODO :只获取了最后一个版本的更新信息, 应该与当前版本做匹配去中间所有未更新的版本信息
 
-            var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.Skip(m_localVersionIndex).ToList();
+            var needUpdatePatchesInfos = m_currentBranch.Patches.Skip(m_localVersionIndex).ToList();
 
-            //var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.GetRange(m_localVersionIndex,
-            //    m_currentGameVersionInfo.PatchInfos.Count);
+            //var needUpdatePatchesInfos = m_currentBranch.PatchInfos.GetRange(m_localVersionIndex,
+            //    m_currentBranch.PatchInfos.Count);
 
             for (int i = needUpdatePatchesInfos.Count - 1; i >= 1; i--)
             {
@@ -671,12 +690,12 @@ namespace Esp.Core.VersionCheck
                 }
             }
 #elif JSON
-            if (null != m_currentGameVersionInfo && null != m_currentGameVersionInfo.PatchInfos && m_currentGameVersionInfo.PatchInfos.Count > 0)
+            if (null != m_currentBranch && null != m_currentBranch.Patches && m_currentBranch.Patches.Count > 0)
             {
-                m_needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.Skip(m_localVersionIndex).ToList();
+                m_needUpdatePatchesInfos = m_currentBranch.Patches.Skip(m_localVersionIndex).ToList();
 
-                //var needUpdatePatchesInfos = m_currentGameVersionInfo.PatchInfos.GetRange(m_localVersionIndex,
-                //    m_currentGameVersionInfo.PatchInfos.Count);
+                //var needUpdatePatchesInfos = m_currentBranch.PatchInfos.GetRange(m_localVersionIndex,
+                //    m_currentBranch.PatchInfos.Count);
 
                 for (int i = m_needUpdatePatchesInfos.Count - 1; i >= 1; i--)
                 {

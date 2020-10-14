@@ -34,30 +34,56 @@ namespace Esp.VersionCheck.DataModule.Json
     {
         public GameVersionInfo()
         {
-            PatchInfos = new List<Patches>();
+            Branches = new List<Branches>();
         }
 
         /// <summary>
         /// APP Version
         /// </summary>
         public string GameVersion;
+
         /// <summary>
-        /// 对应ServerInfo.json中的 Patches字段
+        /// Branches 可以区分不同的功能模块
         /// </summary>
-        public List<Patches> PatchInfos;
+        public List<Branches> Branches;
+
 
         public GameVersionInfo(JsonData data)
         {
-            PatchInfos = new List<Patches>();
-
             GameVersion = data["GameVersion"] == null ? "" : data["GameVersion"].ToString();
+
+            Branches = new List<Branches>();
+            foreach (JsonData item in data["Branches"])
+            {
+                Branches.Add(new Branches(item));
+            }
+        }
+    }
+
+    [Serializable]
+    public class Branches
+    {
+        public Branches()
+        {
+            Patches = new List<Patches>();
+        }
+
+        public string BranchName = string.Empty;
+
+        public List<Patches> Patches;
+
+        public Branches(JsonData data)
+        {
+            Patches = new List<Patches>();
+
+            BranchName = null == data["BranchName"] ? "" : data["BranchName"].ToString();
+
             foreach (JsonData item in data["Patches"])
             {
-                PatchInfos.Add(new Patches(item));
+                Patches.Add(new Patches(item));
+                // 对每个大版本热更的小更新进行重新排序
+                Patches = Patches.OrderBy(i => int.Parse(i.Version)).ToList();
             }
-
-            // 对每个大版本热更的小更新进行重新排序
-            PatchInfos = PatchInfos.OrderBy(i => int.Parse(i.Version)).ToList();
         }
     }
 
