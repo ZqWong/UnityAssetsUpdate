@@ -22,7 +22,8 @@ namespace Esp.Core.VersionCheck
 {
     public class HotPatchManager : Singleton<HotPatchManager>
     {
-        private readonly string LOCAL_VERSION_INFO_FILE_PATH = Application.streamingAssetsPath + "/LocalVersion/AppVersion.json";
+        private readonly string STREAMING_VERSION_INFO_FILE_PATH = Application.streamingAssetsPath + "/LocalVersion/AppVersion.json";
+        private readonly string PERSISTENT_VERSION_INFO_FILE_PATH = Application.persistentDataPath + "/LocalVersion/AppVersion.json";
 
         private MonoBehaviour m_mono;
         private string m_unPackPath = Application.persistentDataPath + "/Origin";
@@ -452,23 +453,33 @@ namespace Esp.Core.VersionCheck
 #endif
         }
 
+        private IEnumerator CopyJsonFile()
+        {
+            UnityWebRequest unityWebRequest = UnityWebRequest.Get(STREAMING_VERSION_INFO_FILE_PATH);
+            unityWebRequest.downloadHandler = new DownloadHandlerFile(PERSISTENT_VERSION_INFO_FILE_PATH);
+            yield return unityWebRequest.SendWebRequest();
+            if (unityWebRequest.isDone)
+            {
+                StreamReader jsonStream = new StreamReader(PERSISTENT_VERSION_INFO_FILE_PATH);
+                string jsonString = jsonStream.ReadToEnd();
+                jsonStream.Close();
+                var localVersionInfo = JsonUtility.FromJson<VersionInfoDataModule>(jsonString);
+
+                //从本地文件获取打包信息
+                m_curVersion = localVersionInfo.Version;
+                m_curPackName = localVersionInfo.PackageName;
+
+                Debug.Log(string.Format("Get local version info, Version : {0} PackageName : {1}.", m_curVersion, m_curPackName));
+            }
+        }
+
         /// <summary>
         /// 读取打包时的版本
         /// </summary>
         private void ReadVersion()
         {
 #if JSON
-            StreamReader sr = new StreamReader(LOCAL_VERSION_INFO_FILE_PATH);
-            var content = sr.ReadToEnd();
-            var localVersionInfo = new VersionInfoDataModule(JsonMapper.ToObject(content));
-            sr.Close();
-
-            // 从本地文件获取打包信息
-            m_curVersion = localVersionInfo.Version;
-            m_curPackName = localVersionInfo.PackageName;
-
-            Debug.Log(string.Format("Get local version info, Version : {0} PackageName : {1}.", m_curVersion, m_curPackName));
-
+            m_mono.StartCoroutine(CopyJsonFile());
 #elif XML
             TextAsset textAsset = Resources.Load<TextAsset>("Version");
             if (textAsset == null)
@@ -541,7 +552,7 @@ namespace Esp.Core.VersionCheck
             }
             else
             {
-                yield return FileUtil.Instance.CreateFile(m_serverJsonPath, webRequest.downloadHandler.data, null);
+                yield return Utils.Core.FileUtil.Instance.CreateFile(m_serverJsonPath, webRequest.downloadHandler.data, null);
                 yield return new WaitForEndOfFrame();
                 if (File.Exists(m_serverJsonPath))
                 {
@@ -575,7 +586,7 @@ namespace Esp.Core.VersionCheck
             }
             else
             {
-                yield return FileUtil.Instance.CreateFile(localPath, webRequest.downloadHandler.data, null);
+                yield return Utils.Core.FileUtil.Instance.CreateFile(localPath, webRequest.downloadHandler.data, null);
                 yield return new WaitForEndOfFrame();
             }
         }

@@ -240,14 +240,14 @@ public class VersionUpdateManager : MonoBehaviour
 
     public void OnClickDeleteFilesBtn()
     {
-        if (System.IO.Directory.Exists(localAssetPath))
+        if (System.IO.Directory.Exists(Application.persistentDataPath))
         {
             Debug.LogError("   存在 删除文件夹 ");
             m_messageText.text = string.Format(DateTime.Now + " 存在 删除文件夹 【{0}】", localAssetPath);
             // System.IO.Directory.Delete(@updateAssets.list[0].LocalUrl);
             try
             {
-                var dir = new System.IO.DirectoryInfo(localAssetPath);
+                var dir = new System.IO.DirectoryInfo(Application.persistentDataPath);
                 var files = dir.GetFiles();
                 foreach (var file in files)
                 {
